@@ -1,0 +1,353 @@
+export const biomes = [
+  {
+    id: 'meadow',
+    name: 'Sunlit Meadow',
+    description: 'Rolling green hills dotted with wildflowers and gentle streams.',
+    floorTiles: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    wallTiles: [4, 5, 6, 7],
+    waterTiles: [0, 1, 2, 3, 4, 5],
+    colors: {
+      primary: 0x4a7c3f,
+      secondary: 0x5a9c4f,
+      accent: 0x7abf58,
+    },
+    mobs: [
+      { type: 'orc', weight: 4 },
+      { type: 'slime', weight: 3 },
+      { type: 'wolf', weight: 2 },
+    ],
+    resources: [
+      { type: 'wood', density: 0.08 },
+      { type: 'fiber', density: 0.12 },
+      { type: 'stone', density: 0.04 },
+    ],
+    ambientSound: 'meadow_birds',
+    dayColor: 0xffffff,
+    nightColor: 0x6688aa,
+  },
+  
+  {
+    id: 'forest',
+    name: 'Whispering Woods',
+    description: 'Dense ancient forest where sunlight barely penetrates the canopy.',
+    floorTiles: [0, 1, 2, 3],
+    wallTiles: [0, 1, 2, 3],
+    waterTiles: [0, 1],
+    colors: {
+      primary: 0x2d5a2d,
+      secondary: 0x1a3d1a,
+      accent: 0x3d7a3d,
+    },
+    mobs: [
+      { type: 'wolf', weight: 4 },
+      { type: 'orc', weight: 3 },
+      { type: 'dire_wolf', weight: 1 },
+    ],
+    resources: [
+      { type: 'wood', density: 0.18 },
+      { type: 'fiber', density: 0.08 },
+      { type: 'moonpetal_seed', density: 0.02 },
+    ],
+    ambientSound: 'forest_ambient',
+    dayColor: 0xccddcc,
+    nightColor: 0x334433,
+    treeDensity: 0.15,
+  },
+  
+  {
+    id: 'desert',
+    name: 'Scorched Sands',
+    description: 'Endless dunes of golden sand under a merciless sun.',
+    floorTiles: [9, 10, 11, 12, 13],
+    wallTiles: [8, 9, 10, 11],
+    waterTiles: [],
+    colors: {
+      primary: 0xd4a754,
+      secondary: 0xc4913a,
+      accent: 0xe8c36a,
+    },
+    mobs: [
+      { type: 'orc', weight: 3 },
+      { type: 'brute', weight: 2 },
+      { type: 'skeleton', weight: 2 },
+    ],
+    resources: [
+      { type: 'stone', density: 0.06 },
+      { type: 'iron_ore', density: 0.04 },
+      { type: 'gold_ore', density: 0.01 },
+    ],
+    ambientSound: 'desert_wind',
+    dayColor: 0xffeedd,
+    nightColor: 0x445566,
+    hazard: {
+      type: 'heat',
+      damage: 1,
+      interval: 5000,
+    },
+  },
+  
+  {
+    id: 'cave',
+    name: 'Crystalline Depths',
+    description: 'Dark underground caverns lit by glowing crystals.',
+    floorTiles: [15, 16, 17, 18],
+    wallTiles: [12, 13, 14, 15],
+    waterTiles: [6, 7, 8],
+    colors: {
+      primary: 0x3d3d4d,
+      secondary: 0x2d2d3d,
+      accent: 0x5a5a7a,
+    },
+    mobs: [
+      { type: 'bat', weight: 4 },
+      { type: 'skeleton', weight: 3 },
+      { type: 'golem', weight: 1 },
+    ],
+    resources: [
+      { type: 'stone', density: 0.12 },
+      { type: 'iron_ore', density: 0.08 },
+      { type: 'coal', density: 0.10 },
+      { type: 'silver_ore', density: 0.03 },
+      { type: 'moonstone', density: 0.01 },
+    ],
+    ambientSound: 'cave_drips',
+    dayColor: 0x666688,
+    nightColor: 0x222244,
+    underground: true,
+  },
+  
+  {
+    id: 'ruins',
+    name: 'Forgotten Ruins',
+    description: 'Crumbling remnants of an ancient civilization.',
+    floorTiles: [15, 16, 17, 18, 19],
+    wallTiles: [15, 16, 17, 18],
+    waterTiles: [10, 11, 12, 13],
+    colors: {
+      primary: 0x6b6b7b,
+      secondary: 0x4b4b5b,
+      accent: 0x8b8b9b,
+    },
+    mobs: [
+      { type: 'skeleton', weight: 4 },
+      { type: 'skeleton_warrior', weight: 2 },
+      { type: 'necromancer', weight: 1 },
+    ],
+    resources: [
+      { type: 'stone', density: 0.10 },
+      { type: 'bone', density: 0.08 },
+      { type: 'ancient_relic', density: 0.005 },
+    ],
+    ambientSound: 'ruins_whispers',
+    dayColor: 0xaaaacc,
+    nightColor: 0x334455,
+    structures: ['broken_pillar', 'ruined_wall', 'ancient_altar'],
+  },
+  
+  {
+    id: 'swamp',
+    name: 'Murky Marshlands',
+    description: 'Foggy wetlands filled with dangerous creatures and hidden treasures.',
+    floorTiles: [3, 4, 5, 6],
+    wallTiles: [4, 5, 6],
+    waterTiles: [0, 1, 2, 3, 4, 5],
+    colors: {
+      primary: 0x3a5a3a,
+      secondary: 0x2a4a2a,
+      accent: 0x4a6a4a,
+    },
+    mobs: [
+      { type: 'slime', weight: 5 },
+      { type: 'bat', weight: 3 },
+      { type: 'skeleton', weight: 2 },
+    ],
+    resources: [
+      { type: 'fiber', density: 0.15 },
+      { type: 'wood', density: 0.06 },
+      { type: 'clay', density: 0.08 },
+    ],
+    ambientSound: 'swamp_frogs',
+    dayColor: 0x889988,
+    nightColor: 0x223322,
+    hazard: {
+      type: 'poison',
+      damage: 2,
+      interval: 3000,
+    },
+    waterDensity: 0.25,
+  },
+  
+  {
+    id: 'volcanic',
+    name: 'Ember Wastes',
+    description: 'Volcanic landscape of lava rivers and ash-covered ground.',
+    floorTiles: [20, 21, 22, 23],
+    wallTiles: [19, 20, 21],
+    waterTiles: [],
+    colors: {
+      primary: 0x4a3030,
+      secondary: 0x3a2020,
+      accent: 0x6a4040,
+    },
+    mobs: [
+      { type: 'fire_elemental', weight: 4 },
+      { type: 'golem', weight: 2 },
+    ],
+    resources: [
+      { type: 'coal', density: 0.15 },
+      { type: 'iron_ore', density: 0.10 },
+      { type: 'firebloom_seed', density: 0.03 },
+    ],
+    ambientSound: 'lava_bubbles',
+    dayColor: 0xffaa88,
+    nightColor: 0x442222,
+    hazard: {
+      type: 'fire',
+      damage: 3,
+      interval: 2000,
+    },
+    lava: true,
+  },
+  
+  {
+    id: 'tundra',
+    name: 'Frozen Expanse',
+    description: 'Icy tundra where blizzards rage and ancient creatures slumber.',
+    floorTiles: [24, 25, 26, 27],
+    wallTiles: [22, 23, 24],
+    waterTiles: [14, 15, 16],
+    colors: {
+      primary: 0x8899aa,
+      secondary: 0x667788,
+      accent: 0xaabbcc,
+    },
+    mobs: [
+      { type: 'ice_elemental', weight: 3 },
+      { type: 'dire_wolf', weight: 4 },
+      { type: 'golem', weight: 1 },
+    ],
+    resources: [
+      { type: 'stone', density: 0.08 },
+      { type: 'silver_ore', density: 0.05 },
+      { type: 'moonstone', density: 0.02 },
+    ],
+    ambientSound: 'wind_howl',
+    dayColor: 0xccddee,
+    nightColor: 0x445566,
+    hazard: {
+      type: 'cold',
+      damage: 1,
+      interval: 4000,
+    },
+    ice: true,
+  },
+  
+  {
+    id: 'village',
+    name: 'Arcforge Village',
+    description: 'A peaceful settlement where adventurers gather.',
+    floorTiles: [0, 1, 2, 3, 4],
+    wallTiles: [],
+    waterTiles: [],
+    colors: {
+      primary: 0x8b7355,
+      secondary: 0x6b5335,
+      accent: 0xab9375,
+    },
+    mobs: [],
+    resources: [],
+    ambientSound: 'village_bustle',
+    dayColor: 0xffffff,
+    nightColor: 0x888899,
+    safe: true,
+    structures: ['forge', 'tanner', 'alchemist', 'well', 'houses'],
+  },
+];
+
+// World generation parameters
+export const worldConfig = {
+  size: 128,
+  seed: null, // Random seed if null
+  biomeScale: 0.03,
+  elevationScale: 0.02,
+  moistureScale: 0.025,
+  temperatureScale: 0.015,
+  
+  // Biome thresholds based on elevation, moisture, temperature
+  biomeRules: [
+    { biome: 'water', maxElevation: 0.3 },
+    { biome: 'swamp', maxElevation: 0.38, minMoisture: 0.6 },
+    { biome: 'desert', maxElevation: 0.55, maxMoisture: 0.3, minTemperature: 0.5 },
+    { biome: 'tundra', maxElevation: 0.55, maxTemperature: 0.3 },
+    { biome: 'forest', maxElevation: 0.55, minMoisture: 0.5 },
+    { biome: 'meadow', maxElevation: 0.55 },
+    { biome: 'ruins', maxElevation: 0.7, minElevation: 0.55 },
+    { biome: 'cave', maxElevation: 0.85, minElevation: 0.55 },
+    { biome: 'volcanic', minElevation: 0.7, minTemperature: 0.6 },
+    { biome: 'tundra', minElevation: 0.7, maxTemperature: 0.4 },
+    { biome: 'cave', minElevation: 0.85 },
+  ],
+  
+  // Village spawn location (center of map)
+  villageRadius: 12,
+  villageClearRadius: 8,
+  
+  // Dungeon generation
+  dungeonCount: 4,
+  dungeonMinDistance: 30,
+  dungeonMaxDistance: 50,
+};
+
+// Dungeon configurations
+export const dungeonTypes = [
+  {
+    id: 'crypt',
+    name: 'Forgotten Crypt',
+    biome: 'ruins',
+    levels: 3,
+    minLevel: 1,
+    boss: 'lich_king',
+    rewards: ['bone_staff', 'ancient_relic', 'dungeon_key'],
+    mobs: ['skeleton', 'skeleton_warrior', 'necromancer'],
+  },
+  {
+    id: 'mine',
+    name: 'Abandoned Mine',
+    biome: 'cave',
+    levels: 4,
+    minLevel: 2,
+    boss: 'ancient_golem',
+    rewards: ['golem_heart', 'titan_shard', 'silver_bar'],
+    mobs: ['bat', 'golem', 'skeleton'],
+  },
+  {
+    id: 'temple',
+    name: 'Desert Temple',
+    biome: 'desert',
+    levels: 3,
+    minLevel: 3,
+    boss: 'orc_warlord',
+    rewards: ['silver_sword', 'gold_bar', 'map_fragment'],
+    mobs: ['orc', 'brute', 'skeleton'],
+  },
+  {
+    id: 'volcano',
+    name: 'Volcanic Lair',
+    biome: 'volcanic',
+    levels: 5,
+    minLevel: 5,
+    boss: 'dragon',
+    rewards: ['dragon_blade', 'dragon_mail', 'dragon_scale'],
+    mobs: ['fire_elemental', 'golem'],
+  },
+  {
+    id: 'glacier',
+    name: 'Frozen Citadel',
+    biome: 'tundra',
+    levels: 4,
+    minLevel: 4,
+    boss: 'ancient_golem',
+    rewards: ['frost_axe', 'titan_helm', 'moonstone'],
+    mobs: ['ice_elemental', 'dire_wolf', 'golem'],
+  },
+];

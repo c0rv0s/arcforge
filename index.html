@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arcforge Shard - Fantasy MMO</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      margin: 0;
+      background: #080a10;
+      font-family: 'Crimson Text', Georgia, serif;
+      color: #e8e4dc;
+      overflow: hidden;
+    }
+    
+    #game-root {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid transparent;
+      border-image: linear-gradient(135deg, #7af5d7, #3ba7f8, #ffd66b, #ff7c52) 1;
+      box-shadow: 0 0 25px rgba(122, 245, 215, 0.15);
+    }
+    
+    #game-root canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .hud {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      display: grid;
+      gap: 6px;
+      background: linear-gradient(145deg, rgba(12, 15, 24, 0.95), rgba(8, 10, 16, 0.98));
+      border: 1px solid rgba(122, 245, 215, 0.2);
+      border-radius: 4px;
+      padding: 16px 20px;
+      min-width: 320px;
+      box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      z-index: 50;
+    }
+    
+    .hud::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20px;
+      right: 20px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #7af5d7, transparent);
+    }
+    
+    .hud h1 {
+      margin: 0 0 8px 0;
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #ffd66b, #ff9f43);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-transform: uppercase;
+    }
+    
+    .hud .stat-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #b8b4ac;
+    }
+    
+    .hud .stat-line span:first-child {
+      font-weight: 600;
+      color: #9ad8ff;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    
+    .hud .stat-line span:last-child {
+      font-family: 'Cinzel', serif;
+      color: #e8e4dc;
+    }
+    
+    .hud .bar {
+      width: 100%;
+      height: 10px;
+      border-radius: 2px;
+      background: rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      margin-bottom: 4px;
+    }
+    
+    .hud .bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #7af5d7, #3ba7f8);
+      box-shadow: 0 0 10px rgba(122, 245, 215, 0.5);
+      transition: width 0.3s ease;
+    }
+    
+    .keybinds {
+      font-size: 11px !important;
+      color: #6a7a8a !important;
+      font-family: 'Crimson Text', serif !important;
+      letter-spacing: 0 !important;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    .panel {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 340px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: linear-gradient(145deg, rgba(12, 15, 24, 0.98), rgba(8, 10, 16, 0.99));
+      border: 1px solid rgba(122, 245, 215, 0.15);
+      border-radius: 4px;
+      padding: 16px 20px;
+      display: none;
+      z-index: 60;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    }
+    
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20px;
+      right: 20px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #ffd66b, transparent);
+    }
+    
+    .panel h2 {
+      margin: 0 0 12px 0;
+      font-family: 'Cinzel', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffd66b;
+      letter-spacing: 1px;
+    }
+    
+    .panel section {
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    
+    .panel button {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      background: rgba(122, 245, 215, 0.08);
+      border: 1px solid rgba(122, 245, 215, 0.25);
+      border-radius: 4px;
+      color: #e8e4dc;
+      font-family: 'Crimson Text', serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    
+    .panel button:hover:not(:disabled) {
+      background: rgba(122, 245, 215, 0.15);
+      border-color: rgba(122, 245, 215, 0.5);
+      box-shadow: 0 0 12px rgba(122, 245, 215, 0.2);
+      transform: translateY(-1px);
+    }
+    
+    .panel button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    .panel button strong {
+      color: #7af5d7;
+      font-family: 'Cinzel', serif;
+    }
+    
+    .panel button small {
+      color: #8a9aaa;
+    }
+    
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 10px;
+      background: rgba(255, 214, 107, 0.1);
+      border: 1px solid rgba(255, 214, 107, 0.2);
+      border-radius: 3px;
+      font-size: 13px;
+      margin: 3px 4px 3px 0;
+      color: #ffd66b;
+    }
+    
+    .log {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      width: calc(100vw - 32px);
+      max-width: 550px;
+      background: linear-gradient(145deg, rgba(12, 15, 24, 0.9), rgba(8, 10, 16, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      z-index: 50;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    .log div {
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    
+    .log div:last-child {
+      border-bottom: none;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(122, 245, 215, 0.3);
+      border-radius: 3px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(122, 245, 215, 0.5);
+    }
+    
+    /* Loading screen override */
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-root"></div>
+  <div class="hud" id="hud"></div>
+  <div class="panel" id="panel"></div>
+  <div class="log" id="log"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
