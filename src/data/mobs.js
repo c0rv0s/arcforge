@@ -321,26 +321,374 @@ export const mobTypes = {
   },
 };
 
+// ==========================================
+// BIOME-SPECIFIC ENEMIES (using Pixel Crawler sprites)
+// ==========================================
+
+// FOREST (North) - Elves
+export const elf_scout = {
+  name: 'Forest Scout',
+  sprite: 'elf_base',
+  hp: 28,
+  speed: 60,
+  attack: 6,
+  attackRate: 1000,
+  aggroRange: 150,
+  tier: 1,
+  biome: 'forest',
+  drops: [
+    { id: 'fiber', chance: 0.5, q: [1, 3] },
+    { id: 'wood', chance: 0.4, q: [1, 2] },
+    { id: 'moonpetal_seed', chance: 0.1, q: [1, 1] },
+  ],
+  xp: 12,
+};
+
+export const elf_hunter = {
+  name: 'Elf Hunter',
+  sprite: 'elf_hunter',
+  hp: 38,
+  speed: 55,
+  attack: 9,
+  attackRate: 1100,
+  aggroRange: 180,
+  tier: 2,
+  biome: 'forest',
+  drops: [
+    { id: 'leather', chance: 0.4, q: [1, 2] },
+    { id: 'hunting_bow', chance: 0.05, q: [1, 1] },
+    { id: 'moonpetal_seed', chance: 0.15, q: [1, 1] },
+  ],
+  xp: 18,
+};
+
+export const elf_druid = {
+  name: 'Forest Druid',
+  sprite: 'elf_druid',
+  hp: 32,
+  speed: 45,
+  attack: 11,
+  attackRate: 1400,
+  aggroRange: 160,
+  tier: 2,
+  biome: 'forest',
+  elite: true,
+  drops: [
+    { id: 'moonpetal_seed', chance: 0.3, q: [1, 2] },
+    { id: 'healing_potion', chance: 0.2, q: [1, 1] },
+    { id: 'sunroot_seed', chance: 0.25, q: [1, 2] },
+  ],
+  xp: 22,
+};
+
+// DESERT (East) - Mummies
+export const mummy = {
+  name: 'Shambling Mummy',
+  sprite: 'mummy_base',
+  hp: 40,
+  speed: 35,
+  attack: 8,
+  attackRate: 1400,
+  aggroRange: 120,
+  tier: 1,
+  biome: 'desert',
+  drops: [
+    { id: 'cloth', chance: 0.5, q: [1, 3] },
+    { id: 'bone', chance: 0.4, q: [1, 2] },
+    { id: 'gold_ore', chance: 0.1, q: [1, 1] },
+  ],
+  xp: 14,
+};
+
+export const mummy_warrior = {
+  name: 'Mummy Guardian',
+  sprite: 'mummy_warrior',
+  hp: 65,
+  speed: 40,
+  attack: 12,
+  attackRate: 1200,
+  aggroRange: 140,
+  tier: 2,
+  biome: 'desert',
+  elite: true,
+  drops: [
+    { id: 'iron_bar', chance: 0.3, q: [1, 2] },
+    { id: 'gold_ore', chance: 0.2, q: [1, 2] },
+    { id: 'iron_sword', chance: 0.08, q: [1, 1] },
+  ],
+  xp: 25,
+};
+
+export const mummy_mage = {
+  name: 'Sand Sorcerer',
+  sprite: 'mummy_mage',
+  hp: 35,
+  speed: 45,
+  attack: 14,
+  attackRate: 1500,
+  aggroRange: 180,
+  tier: 2,
+  biome: 'desert',
+  elite: true,
+  drops: [
+    { id: 'moonstone', chance: 0.15, q: [1, 1] },
+    { id: 'gold_ore', chance: 0.25, q: [1, 2] },
+    { id: 'strength_potion', chance: 0.1, q: [1, 1] },
+  ],
+  xp: 28,
+};
+
+// CEMETERY (South) - Zombies
+export const zombie = {
+  name: 'Risen Corpse',
+  sprite: 'zombie_base',
+  hp: 35,
+  speed: 30,
+  attack: 7,
+  attackRate: 1500,
+  aggroRange: 100,
+  tier: 1,
+  biome: 'cemetery',
+  drops: [
+    { id: 'bone', chance: 0.6, q: [1, 3] },
+    { id: 'cloth', chance: 0.3, q: [1, 2] },
+    { id: 'skeleton_dust', chance: 0.2, q: [1, 1] },
+  ],
+  xp: 10,
+};
+
+export const zombie_banshee = {
+  name: 'Wailing Banshee',
+  sprite: 'zombie_banshee',
+  hp: 28,
+  speed: 55,
+  attack: 10,
+  attackRate: 1000,
+  aggroRange: 160,
+  tier: 2,
+  biome: 'cemetery',
+  drops: [
+    { id: 'skeleton_dust', chance: 0.5, q: [2, 4] },
+    { id: 'moonstone', chance: 0.1, q: [1, 1] },
+    { id: 'antidote', chance: 0.15, q: [1, 1] },
+  ],
+  xp: 18,
+};
+
+export const zombie_brute = {
+  name: 'Hulking Zombie',
+  sprite: 'zombie_muscle',
+  hp: 80,
+  speed: 25,
+  attack: 15,
+  attackRate: 1800,
+  aggroRange: 120,
+  tier: 2,
+  biome: 'cemetery',
+  elite: true,
+  drops: [
+    { id: 'bone', chance: 0.7, q: [3, 5] },
+    { id: 'leather', chance: 0.3, q: [1, 2] },
+    { id: 'iron_bar', chance: 0.15, q: [1, 2] },
+  ],
+  xp: 30,
+};
+
+// SEWER (West) - Rats
+export const rat = {
+  name: 'Sewer Rat',
+  sprite: 'rat_base',
+  hp: 18,
+  speed: 70,
+  attack: 4,
+  attackRate: 700,
+  aggroRange: 100,
+  tier: 0,
+  biome: 'sewer',
+  drops: [
+    { id: 'leather', chance: 0.3, q: [1, 1] },
+    { id: 'bone', chance: 0.4, q: [1, 1] },
+  ],
+  xp: 6,
+};
+
+export const rat_warrior = {
+  name: 'Rat Bruiser',
+  sprite: 'rat_warrior',
+  hp: 40,
+  speed: 55,
+  attack: 9,
+  attackRate: 900,
+  aggroRange: 130,
+  tier: 2,
+  biome: 'sewer',
+  drops: [
+    { id: 'leather', chance: 0.4, q: [1, 2] },
+    { id: 'iron_ore', chance: 0.3, q: [1, 2] },
+    { id: 'iron_dagger', chance: 0.05, q: [1, 1] },
+  ],
+  xp: 16,
+};
+
+export const rat_mage = {
+  name: 'Plague Caster',
+  sprite: 'rat_mage',
+  hp: 25,
+  speed: 50,
+  attack: 12,
+  attackRate: 1200,
+  aggroRange: 150,
+  tier: 2,
+  biome: 'sewer',
+  elite: true,
+  drops: [
+    { id: 'antidote', chance: 0.3, q: [1, 2] },
+    { id: 'moonstone', chance: 0.1, q: [1, 1] },
+    { id: 'skeleton_dust', chance: 0.4, q: [1, 2] },
+  ],
+  xp: 22,
+};
+
+// CAVE (Corners) - Fungus
+export const fungus = {
+  name: 'Spore Fungus',
+  sprite: 'fungus_immature',
+  hp: 22,
+  speed: 25,
+  attack: 5,
+  attackRate: 1600,
+  aggroRange: 80,
+  tier: 1,
+  biome: 'cave',
+  drops: [
+    { id: 'fiber', chance: 0.5, q: [1, 3] },
+    { id: 'sunroot_seed', chance: 0.15, q: [1, 1] },
+  ],
+  xp: 8,
+};
+
+export const fungus_heavy = {
+  name: 'Bloated Fungus',
+  sprite: 'fungus_heavy',
+  hp: 55,
+  speed: 20,
+  attack: 10,
+  attackRate: 2000,
+  aggroRange: 90,
+  tier: 2,
+  biome: 'cave',
+  drops: [
+    { id: 'fiber', chance: 0.6, q: [2, 4] },
+    { id: 'healing_potion', chance: 0.15, q: [1, 1] },
+    { id: 'antidote', chance: 0.2, q: [1, 1] },
+  ],
+  xp: 20,
+};
+
+export const fungus_elder = {
+  name: 'Elder Shroom',
+  sprite: 'fungus_old',
+  hp: 90,
+  speed: 15,
+  attack: 16,
+  attackRate: 2200,
+  aggroRange: 100,
+  tier: 3,
+  biome: 'cave',
+  elite: true,
+  drops: [
+    { id: 'moonstone', chance: 0.2, q: [1, 2] },
+    { id: 'greater_healing', chance: 0.15, q: [1, 1] },
+    { id: 'antidote', chance: 0.3, q: [1, 2] },
+  ],
+  xp: 35,
+};
+
+// FORGE (Corners) - Stone Golems
+export const stone_sentinel = {
+  name: 'Stone Sentinel',
+  sprite: 'stone_base',
+  hp: 70,
+  speed: 30,
+  attack: 12,
+  attackRate: 1800,
+  aggroRange: 100,
+  tier: 2,
+  biome: 'forge',
+  drops: [
+    { id: 'stone', chance: 0.7, q: [2, 4] },
+    { id: 'iron_ore', chance: 0.4, q: [1, 3] },
+    { id: 'coal', chance: 0.3, q: [1, 2] },
+  ],
+  xp: 25,
+};
+
+export const lava_golem = {
+  name: 'Lava Golem',
+  sprite: 'stone_lava',
+  hp: 120,
+  speed: 25,
+  attack: 20,
+  attackRate: 2000,
+  aggroRange: 120,
+  tier: 3,
+  biome: 'forge',
+  elite: true,
+  tint: 0xff6b35,
+  drops: [
+    { id: 'coal', chance: 0.8, q: [3, 6] },
+    { id: 'iron_bar', chance: 0.4, q: [2, 4] },
+    { id: 'golem_heart', chance: 0.15, q: [1, 1] },
+  ],
+  xp: 45,
+};
+
+// Add new enemies to mobTypes
+Object.assign(mobTypes, {
+  elf_scout, elf_hunter, elf_druid,
+  mummy, mummy_warrior, mummy_mage,
+  zombie, zombie_banshee, zombie_brute,
+  rat, rat_warrior, rat_mage,
+  fungus, fungus_heavy, fungus_elder,
+  stone_sentinel, lava_golem,
+});
+
 // Mob spawn configurations by biome
 export const biomeSpawns = {
   meadow: [
     { type: 'orc', weight: 4 },
     { type: 'slime', weight: 3 },
-    { type: 'wolf', weight: 2 },
+    { type: 'bat', weight: 2 },
   ],
   forest: [
-    { type: 'wolf', weight: 4 },
-    { type: 'orc', weight: 3 },
-    { type: 'dire_wolf', weight: 1 },
+    { type: 'elf_scout', weight: 5 },
+    { type: 'elf_hunter', weight: 3 },
+    { type: 'elf_druid', weight: 1 },
   ],
   desert: [
-    { type: 'orc', weight: 3 },
-    { type: 'brute', weight: 2 },
-    { type: 'skeleton', weight: 2 },
+    { type: 'mummy', weight: 5 },
+    { type: 'mummy_warrior', weight: 2 },
+    { type: 'mummy_mage', weight: 1 },
+  ],
+  cemetery: [
+    { type: 'zombie', weight: 5 },
+    { type: 'zombie_banshee', weight: 2 },
+    { type: 'zombie_brute', weight: 1 },
+  ],
+  sewer: [
+    { type: 'rat', weight: 5 },
+    { type: 'rat_warrior', weight: 2 },
+    { type: 'rat_mage', weight: 1 },
   ],
   cave: [
-    { type: 'bat', weight: 4 },
-    { type: 'skeleton', weight: 3 },
+    { type: 'fungus', weight: 4 },
+    { type: 'fungus_heavy', weight: 2 },
+    { type: 'fungus_elder', weight: 1 },
+    { type: 'bat', weight: 3 },
+  ],
+  forge: [
+    { type: 'stone_sentinel', weight: 4 },
+    { type: 'lava_golem', weight: 2 },
     { type: 'golem', weight: 1 },
   ],
   ruins: [

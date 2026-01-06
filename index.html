@@ -257,12 +257,55 @@
       background: rgba(122, 245, 215, 0.5);
     }
     
+    /* Shop panel styling */
+    .shop-info {
+      background: rgba(255, 214, 107, 0.1);
+      padding: 8px 12px;
+      border-radius: 4px;
+      text-align: center;
+      font-family: 'Cinzel', serif;
+    }
+
+    .shop-info .gold {
+      color: #ffd66b;
+      font-weight: 600;
+    }
+
+    .shop-buy h3, .shop-sell h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      color: #9ad8ff;
+      margin: 12px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .shop-sell {
+      border-top: 1px solid rgba(122, 245, 215, 0.15);
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+
+    .npc-dialogue {
+      font-style: italic;
+      color: #b8b4ac;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px 14px;
+      border-radius: 4px;
+      border-left: 3px solid #7af5d7;
+    }
+
+    .panel button.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
     /* Loading screen override */
     @keyframes pulse {
       0%, 100% { opacity: 0.6; }
       50% { opacity: 1; }
     }
-    
+
     @keyframes shimmer {
       0% { background-position: -200% center; }
       100% { background-position: 200% center; }

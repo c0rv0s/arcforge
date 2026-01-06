@@ -1,8 +1,10 @@
 import { items } from './data/items.js';
 import { recipes } from './data/recipes.js';
-import { mobTypes } from './data/mobs.js';
+import { mobTypes, biomeSpawns } from './data/mobs.js';
 import { plotConfig } from './data/plots.js';
 import { biomes } from './data/biomes.js';
+import { assetConfig, biomeColors } from './data/assets.js';
+import { shops, villageLayout, getSellPrice } from './data/shops.js';
 
 // Check for CORS issues (running from file:// protocol)
 if (window.location.protocol === 'file:') {
@@ -15,12 +17,67 @@ if (window.location.protocol === 'file:') {
   alert('Game must be run from a local server, not opened directly.\n\nRun: npx serve .\nThen open: http://localhost:3000');
 }
 
-// Tile and world configuration - adjusted for actual asset sizes
+// Tile and world configuration
 const TILE = 32; // Display tile size
-const WORLD_SIZE = 64; // tiles per side
+const WORLD_SIZE = 256; // tiles per side (can be much larger with chunks)
+const VILLAGE_CENTER = { x: 128, y: 128 }; // Center of world
+const VILLAGE_RADIUS = 20; // Safe zone radius in tiles
 const PLAYER_SCALE = 1.0;
 const MOB_SCALE = 1.0;
 const LOG_LIMIT = 6;
+
+// Chunk-based loading system for performance
+const CHUNK_SIZE = 16; // tiles per chunk side
+const RENDER_DISTANCE = 3; // chunks to load in each direction
+const MOBS_PER_CHUNK = 2; // max mobs spawned per chunk
+
+// Directional biome determination based on angle from village center
+function getDirectionalBiome(tileX, tileY) {
+  const dx = tileX - VILLAGE_CENTER.x;
+  const dy = tileY - VILLAGE_CENTER.y;
+  const distFromCenter = Math.hypot(dx, dy);
+
+  // Village safe zone
+  if (distFromCenter < VILLAGE_RADIUS) return 'village';
+  if (distFromCenter < VILLAGE_RADIUS + 5) return 'meadow'; // Village outskirts
+
+  // Calculate angle (0 = East, PI/2 = South, PI = West, -PI/2 = North)
+  const angle = Math.atan2(dy, dx);
+  // Normalize to 0-1 range where 0 = East going clockwise
+  const normalizedAngle = ((angle + Math.PI) / (2 * Math.PI) + 0.25) % 1;
+
+  // Corner detection for cave/forge biomes (corners of the map)
+  const cornerDist = Math.min(
+    Math.hypot(tileX, tileY),
+    Math.hypot(tileX - WORLD_SIZE, tileY),
+    Math.hypot(tileX, tileY - WORLD_SIZE),
+    Math.hypot(tileX - WORLD_SIZE, tileY - WORLD_SIZE)
+  );
+  if (cornerDist < 50) {
+    // NW and SE corners are caves, NE and SW are forge
+    if ((tileX < WORLD_SIZE / 2 && tileY < WORLD_SIZE / 2) ||
+        (tileX > WORLD_SIZE / 2 && tileY > WORLD_SIZE / 2)) {
+      return 'cave';
+    }
+    return 'forge';
+  }
+
+  // Cardinal directions (with some blending at edges)
+  // North: Forest (Elves) - angles around 0 (top)
+  // East: Desert (Mummies) - angles around 0.25
+  // South: Cemetery (Zombies) - angles around 0.5
+  // West: Sewer (Rats) - angles around 0.75
+
+  if (normalizedAngle < 0.125 || normalizedAngle >= 0.875) {
+    return 'forest'; // North
+  } else if (normalizedAngle < 0.375) {
+    return 'desert'; // East
+  } else if (normalizedAngle < 0.625) {
+    return 'cemetery'; // South
+  } else {
+    return 'sewer'; // West
+  }
+}
 
 // Noise function for procedural terrain
 function seededRandom(seed) {
@@ -167,16 +224,7 @@ function renderInventoryPanel() {
   `);
 }
 
-// Biome color palette for procedural generation
-const biomeColors = {
-  meadow: { ground: 0x4a7c3f, accent: 0x5a9c4f },
-  forest: { ground: 0x2d5a2d, accent: 0x1a3d1a },
-  desert: { ground: 0xd4a754, accent: 0xc4913a },
-  cave: { ground: 0x3d3d4d, accent: 0x2d2d3d },
-  water: { ground: 0x3498db, accent: 0x2980b9 },
-  ruins: { ground: 0x6b6b7b, accent: 0x4b4b5b },
-  village: { ground: 0x8b7355, accent: 0x6b5335 },
-};
+// Note: biomeColors is now imported from assets.js
 
 class BootScene extends Phaser.Scene {
   constructor() {
@@ -184,37 +232,44 @@ class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // Create loading bar
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-    
-    const progressBox = this.add.graphics();
-    const progressBar = this.add.graphics();
-    progressBox.fillStyle(0x222222, 0.8);
-    progressBox.fillRect(width / 2 - 160, height / 2 - 25, 320, 50);
-    
-    const loadingText = this.add.text(width / 2, height / 2 - 50, 'Loading Arcforge...', {
-      fontSize: '20px',
-      fill: '#9ad8ff',
-      fontFamily: 'Space Grotesk, sans-serif'
-    }).setOrigin(0.5);
-    
+    // Create DOM-based loading screen (crisp text)
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-screen';
+    loadingDiv.innerHTML = `
+      <div style="position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080a10;z-index:1000;font-family:'Cinzel',serif;">
+        <div style="color:#ffd66b;font-size:24px;margin-bottom:20px;letter-spacing:2px;">LOADING ARCFORGE</div>
+        <div style="width:320px;height:12px;background:rgba(255,255,255,0.1);border-radius:6px;overflow:hidden;margin-bottom:12px;">
+          <div id="load-progress" style="width:0%;height:100%;background:linear-gradient(90deg,#7af5d7,#3ba7f8);transition:width 0.1s;"></div>
+        </div>
+        <div id="load-status" style="color:#6a7a8a;font-size:13px;font-family:'Crimson Text',serif;">Initializing...</div>
+        <div id="load-count" style="color:#4a5a6a;font-size:11px;margin-top:6px;font-family:'Crimson Text',serif;">0 / 0</div>
+      </div>
+    `;
+    document.body.appendChild(loadingDiv);
+
+    const progressEl = document.getElementById('load-progress');
+    const statusEl = document.getElementById('load-status');
+    const countEl = document.getElementById('load-count');
+
     this.load.on('progress', (value) => {
-      progressBar.clear();
-      progressBar.fillStyle(0x7af5d7, 1);
-      progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
+      progressEl.style.width = `${value * 100}%`;
+    });
+
+    this.load.on('fileprogress', (file) => {
+      statusEl.textContent = file.key;
+      const loaded = this.load.totalComplete;
+      const total = this.load.totalToLoad;
+      countEl.textContent = `${loaded} / ${total}`;
     });
 
     this.load.on('loaderror', (file) => {
       console.error(`[Arcforge] Failed to load: ${file.src}`);
-      loadingText.setText(`Error loading: ${file.key}`);
-      loadingText.setColor('#ff6b6b');
+      statusEl.textContent = `Error: ${file.key}`;
+      statusEl.style.color = '#ff6b6b';
     });
 
     this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-      loadingText.destroy();
+      loadingDiv.remove();
     });
 
     // Load tile spritesheets - using correct frame sizes
@@ -235,10 +290,98 @@ class BootScene extends Phaser.Scene {
     this.load.spritesheet('orc-idle', 'assets/mobs/orc/idle.png', { frameWidth: 32, frameHeight: 32 });
     this.load.spritesheet('skeleton-run', 'assets/mobs/skeleton/run.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('skeleton-idle', 'assets/mobs/skeleton/idle.png', { frameWidth: 32, frameHeight: 32 });
-    
+
     // Load additional creature sprites from asset packs
     this.load.spritesheet('bat-idle', 'assets/Small_Bat/Idle/Idle_Down-Sheet.png', { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('bat-move', 'assets/Small_Bat/Move/Move_Down-Sheet.png', { frameWidth: 64, frameHeight: 64 });
+
+    // Load all biome-specific enemy sprites from Pixel Crawler packs
+    this.loadBiomeEnemies();
+
+    // Load NPC sprites
+    this.loadNPCSprites();
+
+    // Load environment assets (buildings, props, stations)
+    this.loadEnvironmentAssets();
+  }
+
+  loadEnvironmentAssets() {
+    const envBase = 'assets/Pixel Crawler - Free Pack/Environment';
+
+    // Station sprites
+    this.load.image('station-furnace', `${envBase}/Structures/Stations/Furnace/Furnace.png`);
+    this.load.image('station-anvil', `${envBase}/Structures/Stations/Anvil/Anvil.png`);
+    this.load.image('station-workbench', `${envBase}/Structures/Stations/Workbench/Workbench.png`);
+
+    // Trees - multiple models and sizes for variety
+    this.load.image('tree-1-small', `${envBase}/Props/Static/Trees/Model_01/Size_02.png`);
+    this.load.image('tree-1-medium', `${envBase}/Props/Static/Trees/Model_01/Size_03.png`);
+    this.load.image('tree-1-large', `${envBase}/Props/Static/Trees/Model_01/Size_04.png`);
+    this.load.image('tree-2-small', `${envBase}/Props/Static/Trees/Model_02/Size_02.png`);
+    this.load.image('tree-2-medium', `${envBase}/Props/Static/Trees/Model_02/Size_03.png`);
+    this.load.image('tree-3-small', `${envBase}/Props/Static/Trees/Model_03/Size_02.png`);
+
+    // General props (spritesheet format - 16x16 frames)
+    this.load.spritesheet('props-vegetation', `${envBase}/Props/Static/Vegetation.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-rocks', `${envBase}/Props/Static/Rocks.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-farm', `${envBase}/Props/Static/Farm.png`, { frameWidth: 16, frameHeight: 16 });
+
+    // Biome-specific props (spritesheet format - 16x16 frames)
+    this.load.spritesheet('props-desert', 'assets/Pixel Crawler - Desert/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-forest', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/Props/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-sewer', 'assets/Pixel Crawler - Sewer/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-cave', 'assets/Pixel Crawler - Cave/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+
+    // Cemetery graves and forest tree
+    this.load.spritesheet('props-graves', 'assets/Pixel Crawler - Cemetery/Environment/Props/Graves.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.image('tree-forest', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.png');
+    this.load.image('tree-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/Props/Tree.png');
+  }
+
+  loadBiomeEnemies() {
+    // Only load base enemy type per biome for faster loading
+    // Variants use the same base sprite with tint
+
+    // Forest - Elf Base
+    const elfBase = 'assets/Pixel Crawler - Fairy Forest 1.7/Enemies';
+    this.load.spritesheet('elf_base-idle', `${elfBase}/Elf - Base/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('elf_base-run', `${elfBase}/Elf - Base/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+
+    // Desert - Mummy Base
+    const mummyBase = 'assets/Pixel Crawler - Desert/Enemy';
+    this.load.spritesheet('mummy_base-idle', `${mummyBase}/Mummy - Base/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('mummy_base-run', `${mummyBase}/Mummy - Base/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+
+    // Cemetery - Zombie Base
+    const zombieBase = 'assets/Pixel Crawler - Cemetery/Entities/Mobs';
+    this.load.spritesheet('zombie_base-idle', `${zombieBase}/Zombie - Base/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('zombie_base-run', `${zombieBase}/Zombie - Base/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+
+    // Sewer - Rat Base
+    const ratBase = 'assets/Pixel Crawler - Sewer/Enemy';
+    this.load.spritesheet('rat_base-idle', `${ratBase}/Rat - Base/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('rat_base-run', `${ratBase}/Rat - Base/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+
+    // Cave - Fungus Immature
+    const fungusBase = 'assets/Pixel Crawler - Cave/Enemies';
+    this.load.spritesheet('fungus_immature-idle', `${fungusBase}/Immature Fungus/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('fungus_immature-run', `${fungusBase}/Immature Fungus/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+
+    // Forge - Stone Base
+    const stoneBase = 'assets/Pixel Crawler - Forge/Enemy';
+    this.load.spritesheet('stone_base-idle', `${stoneBase}/Stone - Base/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('stone_base-run', `${stoneBase}/Stone - Base/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+  }
+
+  loadNPCSprites() {
+    const npcBase = "assets/Pixel Crawler - Free Pack/Entities/Npc's";
+    this.load.spritesheet('npc-knight-idle', `${npcBase}/Knight/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('npc-knight-run', `${npcBase}/Knight/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('npc-wizard-idle', `${npcBase}/Wizzard/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('npc-wizard-run', `${npcBase}/Wizzard/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('npc-rogue-idle', `${npcBase}/Rogue/Idle/Idle-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('npc-rogue-run', `${npcBase}/Rogue/Run/Run-Sheet.png`, { frameWidth: 64, frameHeight: 64 });
   }
 
   create() {
@@ -325,6 +468,72 @@ class BootScene extends Phaser.Scene {
       frameRate: 8,
       repeat: -1,
     });
+
+    // Create animations for all biome-specific enemies
+    this.createBiomeEnemyAnimations();
+
+    // Create NPC animations
+    this.createNPCAnimations();
+  }
+
+  createBiomeEnemyAnimations() {
+    // Helper to create enemy animations if textures exist
+    const createEnemyAnim = (key, idleFrames = 4, runFrames = 6) => {
+      if (this.textures.exists(`${key}-idle`)) {
+        this.anims.create({
+          key: `${key}-idle`,
+          frames: this.anims.generateFrameNumbers(`${key}-idle`, { start: 0, end: idleFrames - 1 }),
+          frameRate: 4,
+          repeat: -1,
+        });
+      }
+      if (this.textures.exists(`${key}-run`)) {
+        this.anims.create({
+          key: `${key}-run`,
+          frames: this.anims.generateFrameNumbers(`${key}-run`, { start: 0, end: runFrames - 1 }),
+          frameRate: 8,
+          repeat: -1,
+        });
+      }
+    };
+
+    // Biome enemies (only base types loaded for performance)
+    ['elf_base', 'mummy_base', 'zombie_base', 'rat_base', 'fungus_immature', 'stone_base'].forEach(k => createEnemyAnim(k));
+  }
+
+  createNPCAnimations() {
+    const createNPCAnim = (key) => {
+      try {
+        const idleKey = `npc-${key}-idle`;
+        if (this.textures.exists(idleKey)) {
+          const idleFrameCount = this.textures.get(idleKey).frameTotal - 1;
+          if (idleFrameCount > 0) {
+            this.anims.create({
+              key: idleKey,
+              frames: this.anims.generateFrameNumbers(idleKey, { start: 0, end: Math.min(3, idleFrameCount - 1) }),
+              frameRate: 4,
+              repeat: -1,
+            });
+          }
+        }
+        const runKey = `npc-${key}-run`;
+        if (this.textures.exists(runKey)) {
+          const runFrameCount = this.textures.get(runKey).frameTotal - 1;
+          if (runFrameCount > 0) {
+            this.anims.create({
+              key: runKey,
+              frames: this.anims.generateFrameNumbers(runKey, { start: 0, end: Math.min(5, runFrameCount - 1) }),
+              frameRate: 8,
+              repeat: -1,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('[Arcforge] Failed to create NPC animation:', key, e);
+      }
+    };
+
+    ['knight', 'wizard', 'rogue'].forEach(k => createNPCAnim(k));
   }
 }
 
@@ -342,224 +551,431 @@ class MainScene extends Phaser.Scene {
     this.npcs = [];
     this.dungeonEntrances = [];
     this.worldSeed = Date.now();
+
+    // Chunk system
+    this.chunks = new Map(); // "chunkX,chunkY" -> chunk data
+    this.loadedChunks = new Set(); // Currently loaded chunk keys
+    this.lastChunkX = null;
+    this.lastChunkY = null;
   }
 
   create() {
-    console.log('[Arcforge] Starting create()');
-    updateHUD('Explore the world, seek the village forge.');
-    renderLog();
-    
-    console.log('[Arcforge] Building world...');
-    this.buildProceduralWorld();
-    
-    console.log('[Arcforge] Creating player...');
-    this.createPlayer();
-    
-    console.log('[Arcforge] Creating village...');
-    this.createVillage();
-    
-    console.log('[Arcforge] Creating plots...');
-    this.createPlots();
-    
-    console.log('[Arcforge] Creating farmland...');
-    this.createFarmland();
-    
-    console.log('[Arcforge] Spawning resources...');
-    this.spawnResources();
-    
-    console.log('[Arcforge] Spawning mobs...');
-    this.spawnMobs();
-    
-    console.log('[Arcforge] Creating dungeons...');
-    this.createDungeonEntrances();
-    
-    console.log('[Arcforge] Init input...');
-    this.initInput();
-    
-    // Camera setup
-    console.log('[Arcforge] Setting up camera...');
-    this.cameras.main.setZoom(1.5);
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(100, 100);
-    
-    // Create minimap camera
-    console.log('[Arcforge] Creating minimap...');
-    this.createMinimap();
-    
-    // Particle effects
-    this.createParticleSystems();
-    
-    logEvent('Welcome to Arcforge Shard! Explore and survive.');
-    console.log('[Arcforge] Create complete!');
-    
-    // Debug: add bright test rectangle
-    const testRect = this.add.rectangle(this.player.x, this.player.y - 50, 100, 100, 0xff0000);
-    testRect.setDepth(1000);
-    console.log('[Arcforge] Player position:', this.player.x, this.player.y);
+    try {
+      window.gameScene = this;
+
+      // Initialize chunk system
+      this.initChunkSystem();
+
+      // Create player at village center
+      this.createPlayer();
+
+      // Load initial chunks around player
+      this.updateChunks(true);
+
+      // Create village structures
+      this.createVillage();
+
+      // Setup other systems
+      this.createPlots();
+      this.createFarmland();
+      this.createDungeonEntrances();
+      this.initInput();
+
+      // Camera
+      this.cameras.main.setZoom(1.5);
+      this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+      this.cameras.main.setDeadzone(100, 100);
+      this.createMinimap();
+      this.createParticleSystems();
+
+      updateHUD('Explore the world, seek the village forge.');
+      renderLog();
+      logEvent('Welcome to Arcforge Shard! Explore and survive.');
+    } catch (err) {
+      // Show error on screen
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:20px;z-index:9999;font-family:monospace;max-width:80%;';
+      errDiv.innerHTML = `<b>Error in create():</b><br>${err.message}<br><br><small>${err.stack}</small>`;
+      document.body.appendChild(errDiv);
+      console.error('[Arcforge] Create error:', err);
+    }
   }
 
-  buildProceduralWorld() {
+  // ========== CHUNK SYSTEM ==========
+
+  initChunkSystem() {
     const worldWidth = WORLD_SIZE * TILE;
     const worldHeight = WORLD_SIZE * TILE;
-    
+
     // Set world bounds
     this.physics.world.bounds.width = worldWidth;
     this.physics.world.bounds.height = worldHeight;
-    
-    // Create collision groups for obstacles
+
+    // Create collision groups
     this.obstacles = this.physics.add.staticGroup();
     this.waterBodies = this.physics.add.staticGroup();
-    
-    // Generate terrain using noise
-    const terrainData = [];
-    
-    for (let y = 0; y < WORLD_SIZE; y++) {
-      terrainData[y] = [];
-      for (let x = 0; x < WORLD_SIZE; x++) {
-        const elevation = perlinNoise(x, y, 4, 0.5, this.worldSeed);
-        const moisture = perlinNoise(x, y, 3, 0.6, this.worldSeed + 1000);
-        const temperature = perlinNoise(x, y, 2, 0.4, this.worldSeed + 2000);
-        
-        let biome = 'meadow';
-        
-        // Determine biome based on noise values
-        if (elevation < 0.3) {
-          biome = 'water';
-        } else if (elevation < 0.35) {
-          biome = moisture > 0.5 ? 'meadow' : 'desert';
-        } else if (elevation < 0.55) {
-          if (moisture > 0.6) biome = 'forest';
-          else if (moisture < 0.35) biome = 'desert';
-          else biome = 'meadow';
-        } else if (elevation < 0.7) {
-          biome = temperature < 0.4 ? 'cave' : 'ruins';
-        } else {
-          biome = 'cave';
+
+    // Terrain data is generated on-demand per chunk
+    this.terrainData = [];
+  }
+
+  getChunkKey(chunkX, chunkY) {
+    return `${chunkX},${chunkY}`;
+  }
+
+  worldToChunk(worldX, worldY) {
+    return {
+      x: Math.floor(worldX / (CHUNK_SIZE * TILE)),
+      y: Math.floor(worldY / (CHUNK_SIZE * TILE))
+    };
+  }
+
+  updateChunks(forceUpdate = false) {
+    const playerChunk = this.worldToChunk(this.player.x, this.player.y);
+
+    // Only update if player moved to new chunk
+    if (!forceUpdate && playerChunk.x === this.lastChunkX && playerChunk.y === this.lastChunkY) {
+      return;
+    }
+    this.lastChunkX = playerChunk.x;
+    this.lastChunkY = playerChunk.y;
+
+    // Determine which chunks should be loaded
+    const chunksToLoad = new Set();
+    for (let dy = -RENDER_DISTANCE; dy <= RENDER_DISTANCE; dy++) {
+      for (let dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
+        const cx = playerChunk.x + dx;
+        const cy = playerChunk.y + dy;
+        // Clamp to world bounds
+        if (cx >= 0 && cy >= 0 && cx < Math.ceil(WORLD_SIZE / CHUNK_SIZE) && cy < Math.ceil(WORLD_SIZE / CHUNK_SIZE)) {
+          chunksToLoad.add(this.getChunkKey(cx, cy));
         }
-        
-        // Distance from center for village placement
-        const centerDist = Math.hypot(x - WORLD_SIZE/2, y - WORLD_SIZE/2);
-        if (centerDist < 12) {
-          biome = 'village';
-        }
-        
-        terrainData[y][x] = { elevation, moisture, biome };
       }
     }
-    
-    // Create terrain graphics directly (simple and reliable)
+
+    // Unload chunks that are out of range
+    for (const key of this.loadedChunks) {
+      if (!chunksToLoad.has(key)) {
+        this.unloadChunk(key);
+      }
+    }
+
+    // Load new chunks
+    for (const key of chunksToLoad) {
+      if (!this.loadedChunks.has(key)) {
+        this.loadChunk(key);
+      }
+    }
+  }
+
+  loadChunk(key) {
+    const [cx, cy] = key.split(',').map(Number);
+    const startX = cx * CHUNK_SIZE;
+    const startY = cy * CHUNK_SIZE;
+
+    // Create graphics for this chunk
     const graphics = this.add.graphics();
     graphics.setDepth(0);
-    
-    // Render terrain tiles
-    for (let y = 0; y < WORLD_SIZE; y++) {
-      for (let x = 0; x < WORLD_SIZE; x++) {
-        const tile = terrainData[y][x];
-        const px = x * TILE;
-        const py = y * TILE;
-        
-        const colors = biomeColors[tile.biome] || biomeColors.meadow;
-        const variation = noise2D(x, y, this.worldSeed + 500) * 0.15;
-        
-        // Draw base tile with variation
+
+    // Debug: log first chunk load
+    if (this.loadedChunks.size === 0) {
+      console.log('[Arcforge] Loading first chunk:', key, 'at tile', startX, startY);
+    }
+
+    const chunkData = {
+      key,
+      graphics,
+      obstacles: [],
+      waterColliders: [],
+      mobs: [],
+    };
+
+    // Generate terrain for this chunk
+    for (let ty = 0; ty < CHUNK_SIZE; ty++) {
+      for (let tx = 0; tx < CHUNK_SIZE; tx++) {
+        const worldTileX = startX + tx;
+        const worldTileY = startY + ty;
+
+        // Skip if outside world bounds
+        if (worldTileX >= WORLD_SIZE || worldTileY >= WORLD_SIZE) continue;
+
+        // Get biome for this tile
+        let biome = getDirectionalBiome(worldTileX, worldTileY);
+
+        // Add water features
+        const waterNoise = perlinNoise(worldTileX, worldTileY, 2, 0.5, this.worldSeed + 3000);
+        if (waterNoise < 0.15 && biome !== 'village' && biome !== 'desert' && biome !== 'forge') {
+          biome = 'water';
+        }
+
+        const px = worldTileX * TILE;
+        const py = worldTileY * TILE;
+
+        // Draw tile
+        const colors = biomeColors[biome] || biomeColors.meadow;
+        const variation = noise2D(worldTileX, worldTileY, this.worldSeed + 500) * 0.15;
+
         const baseColor = Phaser.Display.Color.IntegerToColor(colors.ground);
         const r = Math.max(0, Math.min(255, Math.floor(baseColor.red * (1 + variation))));
         const g = Math.max(0, Math.min(255, Math.floor(baseColor.green * (1 + variation))));
         const b = Math.max(0, Math.min(255, Math.floor(baseColor.blue * (1 + variation))));
         const finalColor = Phaser.Display.Color.GetColor(r, g, b);
-        
+
         graphics.fillStyle(finalColor, 1);
         graphics.fillRect(px, py, TILE, TILE);
-        
-        // Add texture details
-        const detailRand = seededRandom(x * 1000 + y);
-        if (tile.biome === 'meadow' || tile.biome === 'forest') {
-          if (detailRand < 0.2) {
-            graphics.fillStyle(colors.accent, 0.5);
-            graphics.fillCircle(px + TILE * 0.3, py + TILE * 0.6, 2);
-            graphics.fillCircle(px + TILE * 0.7, py + TILE * 0.4, 2);
-          }
-        } else if (tile.biome === 'desert') {
-          if (detailRand < 0.15) {
-            graphics.fillStyle(0xe8c36a, 0.4);
-            graphics.fillCircle(px + TILE * 0.5, py + TILE * 0.5, 1);
-          }
-        } else if (tile.biome === 'water') {
-          // Blue water overlay
-          graphics.fillStyle(0x3498db, 0.9);
-          graphics.fillRect(px, py, TILE, TILE);
-          if (detailRand < 0.1) {
-            graphics.lineStyle(1, 0x5dade2, 0.4);
-            graphics.strokeCircle(px + TILE/2, py + TILE/2, 5);
+
+        // Store terrain data
+        if (!this.terrainData[worldTileY]) this.terrainData[worldTileY] = [];
+        this.terrainData[worldTileY][worldTileX] = { biome };
+
+        // Add ground decorations (moderate density - no collision)
+        const decorRand = seededRandom(worldTileX * 3000 + worldTileY + this.worldSeed);
+        if (biome !== 'water' && decorRand < 0.25) {
+          const decor = this.addGroundDecoration(px, py, biome, decorRand);
+          if (decor) chunkData.obstacles.push(decor);
+        }
+
+        // Create obstacles with collision (trees, rocks)
+        if (biome !== 'water' && biome !== 'village') {
+          const obstacleChances = { forest: 0.05, cave: 0.03, cemetery: 0.04, sewer: 0.02, forge: 0.03, desert: 0.025, meadow: 0.02 };
+          const obstacleRand = seededRandom(worldTileX * 2000 + worldTileY + this.worldSeed);
+          if (obstacleRand < (obstacleChances[biome] || 0.015)) {
+            const obs = this.createObstacle(px + TILE/2, py + TILE/2, biome);
+            if (obs) chunkData.obstacles.push(obs);
           }
         }
-      }
-    }
-    
-    // Now add obstacles and water collisions on top
-    for (let y = 0; y < WORLD_SIZE; y++) {
-      for (let x = 0; x < WORLD_SIZE; x++) {
-        const tile = terrainData[y][x];
-        const px = x * TILE;
-        const py = y * TILE;
-        
-        // Create obstacles (trees, rocks) - less dense for performance
-        if (tile.biome !== 'water' && tile.biome !== 'village') {
-          const obstacleChance = tile.biome === 'forest' ? 0.06 : tile.biome === 'cave' ? 0.04 : 0.02;
-          const obstacleRand = seededRandom(x * 2000 + y + this.worldSeed);
-          if (obstacleRand < obstacleChance) {
-            this.createObstacle(px + TILE/2, py + TILE/2, tile.biome);
-          }
-        }
-        
-        // Create water collision
-        if (tile.biome === 'water') {
+
+        // Water collision
+        if (biome === 'water') {
           const waterRect = this.add.rectangle(px + TILE/2, py + TILE/2, TILE, TILE, 0x000000, 0);
           this.physics.add.existing(waterRect, true);
           this.waterBodies.add(waterRect);
+          chunkData.waterColliders.push(waterRect);
         }
       }
     }
-    
-    this.terrainData = terrainData;
-    console.log('World generated:', WORLD_SIZE, 'x', WORLD_SIZE, 'tiles');
+
+    // Spawn mobs in this chunk (if not village)
+    const chunkCenterX = (startX + CHUNK_SIZE/2);
+    const chunkCenterY = (startY + CHUNK_SIZE/2);
+    const distFromVillage = Math.hypot(chunkCenterX - VILLAGE_CENTER.x, chunkCenterY - VILLAGE_CENTER.y);
+
+    if (distFromVillage > VILLAGE_RADIUS + 5) {
+      for (let i = 0; i < MOBS_PER_CHUNK; i++) {
+        const mobX = (startX + Math.random() * CHUNK_SIZE) * TILE;
+        const mobY = (startY + Math.random() * CHUNK_SIZE) * TILE;
+        const mob = this.spawnMobAt(mobX, mobY);
+        if (mob) chunkData.mobs.push(mob);
+      }
+    }
+
+    this.chunks.set(key, chunkData);
+    this.loadedChunks.add(key);
   }
+
+  unloadChunk(key) {
+    const chunkData = this.chunks.get(key);
+    if (!chunkData) return;
+
+    // Destroy terrain graphics
+    chunkData.graphics.destroy();
+
+    // Remove obstacles (visual, shadow, and collider)
+    chunkData.obstacles.forEach(obs => {
+      if (obs) {
+        if (obs.visual && obs.visual.destroy) obs.visual.destroy();
+        if (obs.shadow && obs.shadow.destroy) obs.shadow.destroy();
+        if (obs.collider) {
+          this.obstacles.remove(obs.collider, true, true);
+        }
+      }
+    });
+
+    // Remove water colliders
+    chunkData.waterColliders.forEach(w => {
+      this.waterBodies.remove(w, true, true);
+    });
+
+    // Remove mobs
+    chunkData.mobs.forEach(mob => {
+      if (mob && mob.destroy) {
+        const idx = this.mobs.indexOf(mob);
+        if (idx > -1) this.mobs.splice(idx, 1);
+        mob.destroy();
+      }
+    });
+
+    this.chunks.delete(key);
+    this.loadedChunks.delete(key);
+  }
+
+  addGroundDecoration(px, py, biome, rand) {
+    // Use simple colored circles/ellipses for ground decoration instead of problematic spritesheets
+    const offsetX = (rand * 100) % TILE;
+    const offsetY = ((rand * 200) % TILE);
+
+    // Biome-specific decoration colors and types
+    const decorColors = {
+      meadow: [0x4a7c3f, 0x5a9c4f, 0x3d6b32], // Grass greens
+      village: [0x6b5a3a, 0x7a6944], // Dirt patches
+      forest: [0x2d5a2d, 0x3d6b3d, 0x1a4a1a], // Dark forest greens
+      desert: [0xc4913a, 0xb4814a], // Sand variations
+      cemetery: [0x4a4a5a, 0x3a3a4a], // Gray stones
+      sewer: [0x3d4a3d, 0x4d5a4d], // Murky greens
+      cave: [0x3d3d4d, 0x4d4d5d], // Cave grays
+      forge: [0x5a3d3d, 0x6a4d4d], // Reddish rocks
+    };
+
+    const colors = decorColors[biome] || decorColors.meadow;
+    const color = colors[Math.floor(rand * 100) % colors.length];
+
+    // Small grass tufts or pebbles
+    const size = 3 + rand * 4;
+    const decoration = this.add.ellipse(px + offsetX, py + offsetY, size, size * 0.6, color, 0.6);
+    decoration.setDepth(1);
+
+    return { visual: decoration, shadow: null, collider: null };
+  }
+
+  drawBiomeDetail(graphics, biome, px, py, colors, detailRand) {
+    // Draw subtle ground texture variations
+    if (biome === 'water') {
+      graphics.fillStyle(0x3498db, 0.9);
+      graphics.fillRect(px, py, TILE, TILE);
+      if (detailRand < 0.1) {
+        graphics.lineStyle(1, 0x5dade2, 0.4);
+        graphics.strokeCircle(px + TILE/2, py + TILE/2, 5);
+      }
+    }
+  }
+
+  spawnMobAt(x, y) {
+    // Get biome at position
+    const tileX = Math.floor(x / TILE);
+    const tileY = Math.floor(y / TILE);
+    const biome = getDirectionalBiome(tileX, tileY);
+
+    // Get valid mob types for this biome
+    const validTypes = biomeSpawns[biome] || biomeSpawns.meadow || ['orc'];
+    const mobType = validTypes[Math.floor(Math.random() * validTypes.length)];
+    const data = mobTypes[mobType];
+    if (!data) return null;
+
+    // Get sprite key
+    const spriteToIdle = {
+      'orc': 'orc-idle', 'skeleton': 'skeleton-idle', 'bat': 'bat-idle',
+      'golem': 'orc-idle', 'elemental': 'orc-idle', 'wolf': 'orc-idle', 'slime': 'orc-idle', 'dragon': 'orc-idle',
+      'elf_base': 'elf_base-idle', 'elf_hunter': 'elf_base-idle', 'elf_druid': 'elf_base-idle', 'elf_ranger': 'elf_base-idle',
+      'mummy_base': 'mummy_base-idle', 'mummy_warrior': 'mummy_base-idle', 'mummy_rogue': 'mummy_base-idle', 'mummy_mage': 'mummy_base-idle',
+      'zombie_base': 'zombie_base-idle', 'zombie_banshee': 'zombie_base-idle', 'zombie_muscle': 'zombie_base-idle', 'zombie_fat': 'zombie_base-idle',
+      'rat_base': 'rat_base-idle', 'rat_warrior': 'rat_base-idle', 'rat_rogue': 'rat_base-idle', 'rat_mage': 'rat_base-idle',
+      'fungus_immature': 'fungus_immature-idle', 'fungus_long': 'fungus_immature-idle', 'fungus_heavy': 'fungus_immature-idle', 'fungus_old': 'fungus_immature-idle',
+      'stone_base': 'stone_base-idle', 'stone_golem': 'stone_base-idle', 'stone_lava': 'stone_base-idle',
+    };
+    const spriteKey = spriteToIdle[data.sprite] || 'orc-idle';
+
+    if (!this.textures.exists(spriteKey)) return null;
+
+    const mob = this.physics.add.sprite(x, y, spriteKey);
+    mob.setScale(MOB_SCALE);
+    mob.setDataEnabled();
+    mob.data.set('type', mobType);
+    mob.data.set('hp', data.hp);
+    mob.data.set('maxHp', data.hp);
+    mob.data.set('state', 'idle');
+    mob.data.set('lastWander', 0);
+    mob.setCollideWorldBounds(true);
+
+    if (this.anims.exists(spriteKey)) mob.play(spriteKey);
+
+    this.mobs.push(mob);
+    this.physics.add.collider(mob, this.obstacles);
+    this.physics.add.collider(mob, this.waterBodies);
+
+    return mob;
+  }
+
+  // ========== END CHUNK SYSTEM ==========
   
   debugLog(msg) {
     console.log('[Arcforge]', msg);
   }
   
   createObstacle(x, y, biome) {
-    const graphics = this.add.graphics();
-    graphics.setDepth(2);
-    
+    let visual = null;
+    const rand = Math.random();
+
+    let shadow = null;
+
     if (biome === 'forest' || biome === 'meadow') {
-      // Tree
-      graphics.fillStyle(0x4a3728, 1);
-      graphics.fillRect(x - 4, y, 8, 16);
-      graphics.fillStyle(0x2d5a2d, 1);
-      graphics.fillCircle(x, y - 8, 14);
-      graphics.fillStyle(0x3d7a3d, 0.8);
-      graphics.fillCircle(x - 4, y - 6, 8);
-      graphics.fillCircle(x + 5, y - 10, 10);
+      // Use varied tree sprites - these are large images so scale down appropriately
+      const treeOptions = ['tree-1-small', 'tree-1-medium', 'tree-2-small', 'tree-2-medium', 'tree-3-small'];
+      const treeKey = treeOptions[Math.floor(rand * treeOptions.length)];
+      const scale = 0.35 + rand * 0.15; // Trees at 35-50% scale
+
+      if (this.textures.exists(treeKey)) {
+        // Tree shadow
+        shadow = this.add.ellipse(x, y + 10, 30, 12, 0x000000, 0.25);
+        shadow.setDepth(y - 1);
+
+        visual = this.add.sprite(x, y, treeKey);
+        visual.setScale(scale);
+        visual.setOrigin(0.5, 0.95); // Anchor at bottom of tree
+        visual.setDepth(y);
+      }
     } else if (biome === 'desert') {
-      // Cactus
-      graphics.fillStyle(0x4a8f4a, 1);
-      graphics.fillRect(x - 3, y - 10, 6, 20);
-      graphics.fillRect(x - 10, y - 6, 8, 4);
-      graphics.fillRect(x + 2, y - 2, 8, 4);
-    } else if (biome === 'cave' || biome === 'ruins') {
-      // Rock
-      graphics.fillStyle(0x5a5a6a, 1);
-      graphics.fillCircle(x, y, 10);
-      graphics.fillStyle(0x4a4a5a, 0.8);
-      graphics.fillCircle(x - 3, y + 2, 6);
+      // Desert - use rocks/boulders (simple shapes for now)
+      const rockSize = 12 + rand * 8;
+      shadow = this.add.ellipse(x, y + 4, rockSize, rockSize * 0.4, 0x000000, 0.2);
+      shadow.setDepth(y - 1);
+      visual = this.add.ellipse(x, y - rockSize/3, rockSize, rockSize * 0.7, 0xb8956a, 1);
+      visual.setDepth(y);
+    } else if (biome === 'cemetery') {
+      // Cemetery - use dead tree if available, otherwise simple gravestones
+      if (rand < 0.3 && this.textures.exists('tree-cemetery')) {
+        const scale = 0.25 + rand * 0.1;
+        shadow = this.add.ellipse(x, y + 8, 25, 10, 0x000000, 0.25);
+        shadow.setDepth(y - 1);
+        visual = this.add.sprite(x, y, 'tree-cemetery');
+        visual.setScale(scale);
+        visual.setOrigin(0.5, 0.95);
+        visual.setDepth(y);
+      } else {
+        // Simple gravestone shape
+        const height = 16 + rand * 8;
+        shadow = this.add.ellipse(x, y + 2, 10, 4, 0x000000, 0.2);
+        shadow.setDepth(y - 1);
+        visual = this.add.rectangle(x, y - height/2, 8, height, 0x5a5a6a);
+        visual.setDepth(y);
+      }
+    } else if (biome === 'cave' || biome === 'sewer' || biome === 'forge') {
+      // Cave/Sewer/Forge - rock formations
+      const rockSize = 10 + rand * 10;
+      const rockColor = biome === 'forge' ? 0x5a3d3d : 0x4a4a5a;
+      shadow = this.add.ellipse(x, y + 3, rockSize, rockSize * 0.3, 0x000000, 0.2);
+      shadow.setDepth(y - 1);
+      visual = this.add.ellipse(x, y - rockSize/4, rockSize, rockSize * 0.6, rockColor, 1);
+      visual.setDepth(y);
+    } else if (biome === 'village') {
+      // Village - skip obstacles, keep it clear
+      return null;
     }
-    
+
+    // Fallback - small rock
+    if (!visual) {
+      const rockSize = 8 + rand * 6;
+      shadow = this.add.ellipse(x, y + 2, rockSize, rockSize * 0.3, 0x000000, 0.2);
+      shadow.setDepth(y - 1);
+      visual = this.add.ellipse(x, y - rockSize/4, rockSize, rockSize * 0.5, 0x6a6a6a, 1);
+      visual.setDepth(y);
+    }
+
     // Add collision
-    const obstacle = this.add.rectangle(x, y + 4, 16, 16, 0x000000, 0);
-    this.physics.add.existing(obstacle, true);
-    this.obstacles.add(obstacle);
+    const collider = this.add.rectangle(x, y + 4, 16, 16, 0x000000, 0);
+    this.physics.add.existing(collider, true);
+    this.obstacles.add(collider);
+
+    return { visual, shadow, collider };
   }
 
   createPlayer() {
@@ -591,75 +1007,226 @@ class MainScene extends Phaser.Scene {
   }
 
   createVillage() {
-    const centerX = (WORLD_SIZE / 2) * TILE;
-    const centerY = (WORLD_SIZE / 2) * TILE;
-    
-    // Village stations
-    this.addStation({ x: centerX - 80, y: centerY - 40, type: 'forge', label: 'Village Forge' });
-    this.addStation({ x: centerX + 80, y: centerY - 40, type: 'tanner', label: 'Tanner' });
-    this.addStation({ x: centerX, y: centerY + 60, type: 'alchemist', label: 'Alchemist' });
-    
-    // Add village NPCs
-    this.createNPC(centerX - 30, centerY - 20, 'blacksmith', 'Forge Master Kern');
-    this.createNPC(centerX + 100, centerY - 20, 'merchant', 'Trader Mira');
-    this.createNPC(centerX, centerY + 80, 'alchemist', 'Sage Elden');
-    
+    const centerX = VILLAGE_CENTER.x * TILE;
+    const centerY = VILLAGE_CENTER.y * TILE;
+
+    // Village crafting stations (from villageLayout)
+    const stationPositions = villageLayout.stationPositions;
+    this.addStation({
+      x: centerX + stationPositions.forge.x * TILE,
+      y: centerY + stationPositions.forge.y * TILE,
+      type: 'forge',
+      label: 'Village Forge'
+    });
+    this.addStation({
+      x: centerX + stationPositions.tanner.x * TILE,
+      y: centerY + stationPositions.tanner.y * TILE,
+      type: 'tanner',
+      label: 'Tanner'
+    });
+    this.addStation({
+      x: centerX + stationPositions.alchemist.x * TILE,
+      y: centerY + stationPositions.alchemist.y * TILE,
+      type: 'alchemist',
+      label: 'Alchemist'
+    });
+
+    // Create shop buildings and NPCs
+    Object.entries(shops).forEach(([shopId, shop]) => {
+      const pos = villageLayout.shopPositions[shopId];
+      if (!pos) return;
+
+      const shopX = centerX + pos.x * TILE;
+      const shopY = centerY + pos.y * TILE;
+
+      // Create shop building
+      this.createShopBuilding(shopX, shopY, shop);
+
+      // Create shop NPC
+      this.createShopNPC(shopX, shopY + 30, shopId, shop);
+    });
+
+    // Add extra NPCs for flavor
+    villageLayout.extraNPCs.forEach((npc) => {
+      const npcX = centerX + npc.x * TILE;
+      const npcY = centerY + npc.y * TILE;
+      this.createNPC(npcX, npcY, npc.role, npc.name, npc.sprite);
+    });
+
     // Village decorations
     const graphics = this.add.graphics();
     graphics.setDepth(1);
-    
-    // Well
+
+    // Well at center
     graphics.fillStyle(0x5a5a6a, 1);
-    graphics.fillCircle(centerX + 40, centerY, 16);
+    graphics.fillCircle(centerX, centerY, 20);
     graphics.fillStyle(0x3498db, 0.7);
-    graphics.fillCircle(centerX + 40, centerY, 10);
-    graphics.lineStyle(2, 0x4a3728);
-    graphics.strokeCircle(centerX + 40, centerY, 16);
-    
+    graphics.fillCircle(centerX, centerY, 12);
+    graphics.lineStyle(3, 0x4a3728);
+    graphics.strokeCircle(centerX, centerY, 20);
+
     // Add well collision
-    const well = this.add.rectangle(centerX + 40, centerY, 32, 32, 0x000000, 0);
+    const well = this.add.rectangle(centerX, centerY, 40, 40, 0x000000, 0);
     this.physics.add.existing(well, true);
     this.obstacles.add(well);
-    
-    // Village paths
+
+    // Village paths - cross pattern
     graphics.fillStyle(0x8b7355, 0.6);
-    for (let i = -6; i <= 6; i++) {
-      graphics.fillRect(centerX + i * TILE - TILE/2, centerY - 100, TILE, 200);
+    // North-South path
+    for (let i = -10; i <= 10; i++) {
+      graphics.fillRect(centerX - TILE, centerY + i * TILE - TILE/2, TILE * 2, TILE);
     }
-    for (let i = -4; i <= 4; i++) {
-      graphics.fillRect(centerX - 100, centerY + i * TILE - TILE/2, 200, TILE);
+    // East-West path
+    for (let i = -10; i <= 10; i++) {
+      graphics.fillRect(centerX + i * TILE - TILE/2, centerY - TILE, TILE, TILE * 2);
     }
   }
-  
-  createNPC(x, y, type, name) {
+
+  createShopBuilding(x, y, shop) {
     const graphics = this.add.graphics();
-    graphics.setDepth(3);
-    
-    // NPC body
-    const colors = {
-      blacksmith: 0x8b4513,
-      merchant: 0x9b59b6,
-      alchemist: 0x27ae60,
-    };
-    
-    graphics.fillStyle(colors[type] || 0x7f8c8d, 1);
-    graphics.fillCircle(x, y - 8, 10);
-    graphics.fillStyle(0xf5deb3, 1);
-    graphics.fillCircle(x, y - 16, 8);
-    
+    graphics.setDepth(2);
+
+    // Building base
+    graphics.fillStyle(0x6b5a3a, 1);
+    graphics.fillRect(x - 40, y - 35, 80, 70);
+
+    // Building roof
+    graphics.fillStyle(0x8b4513, 1);
+    graphics.beginPath();
+    graphics.moveTo(x - 50, y - 30);
+    graphics.lineTo(x, y - 60);
+    graphics.lineTo(x + 50, y - 30);
+    graphics.closePath();
+    graphics.fillPath();
+
+    // Door
+    graphics.fillStyle(0x4a3728, 1);
+    graphics.fillRect(x - 10, y + 10, 20, 25);
+
+    // Window
+    graphics.fillStyle(0x87ceeb, 0.7);
+    graphics.fillRect(x - 30, y - 15, 15, 15);
+    graphics.fillRect(x + 15, y - 15, 15, 15);
+
+    // Sign
+    const sign = this.add.text(x, y - 70, shop.name, {
+      fontSize: '11px',
+      color: '#ffd66b',
+      fontFamily: 'Space Grotesk',
+      backgroundColor: '#2c2c2c88',
+      padding: { x: 4, y: 2 },
+    }).setOrigin(0.5).setDepth(10);
+
+    // Building collision
+    const building = this.add.rectangle(x, y - 10, 75, 60, 0x000000, 0);
+    this.physics.add.existing(building, true);
+    this.obstacles.add(building);
+  }
+
+  createShopNPC(x, y, shopId, shop) {
+    // Use Pixel Crawler NPC sprites if available (note: loaded with 'npc-' prefix)
+    const spriteKey = `npc-${shop.npcSprite}-idle`;
+    let npcSprite;
+
+    if (this.textures.exists(spriteKey)) {
+      npcSprite = this.add.sprite(x, y, spriteKey);
+      npcSprite.setScale(1.0);
+      // Safely try to play animation
+      try {
+        if (this.anims.exists(spriteKey)) {
+          npcSprite.play(spriteKey);
+        }
+      } catch (e) {
+        // Animation failed, sprite will show static
+      }
+      npcSprite.setDepth(5);
+    } else {
+      // Fallback to colored circle
+      const graphics = this.add.graphics();
+      graphics.setDepth(5);
+      const colors = { knight: 0x7f8c8d, wizard: 0x9b59b6, rogue: 0x27ae60 };
+      graphics.fillStyle(colors[shop.npcSprite] || 0x7f8c8d, 1);
+      graphics.fillCircle(x, y - 8, 12);
+      graphics.fillStyle(0xf5deb3, 1);
+      graphics.fillCircle(x, y - 18, 8);
+    }
+
+    // Name tag
+    const nameText = this.add.text(x, y - 40, shop.npcName, {
+      fontSize: '10px',
+      color: '#ffd66b',
+      fontFamily: 'Space Grotesk',
+    }).setOrigin(0.5).setDepth(10);
+
+    // NPC collision/interaction zone
+    const npcHitbox = this.add.rectangle(x, y, 30, 30, 0x000000, 0);
+    this.physics.add.existing(npcHitbox, true);
+    this.obstacles.add(npcHitbox);
+
+    this.npcs.push({
+      x, y,
+      type: 'shop',
+      shopId: shopId,
+      name: shop.npcName,
+      sprite: npcSprite,
+      nameText,
+      hitbox: npcHitbox
+    });
+  }
+  
+  createNPC(x, y, type, name, spriteType = null) {
+    let npcSprite = null;
+
+    // Try to use Pixel Crawler sprite if specified (note: loaded with 'npc-' prefix)
+    if (spriteType) {
+      const spriteKey = `npc-${spriteType}-idle`;
+      if (this.textures.exists(spriteKey)) {
+        npcSprite = this.add.sprite(x, y, spriteKey);
+        npcSprite.setScale(1.0);
+        try {
+          if (this.anims.exists(spriteKey)) {
+            npcSprite.play(spriteKey);
+          }
+        } catch (e) {
+          // Animation failed, sprite will show static
+        }
+        npcSprite.setDepth(5);
+      }
+    }
+
+    // Fallback to graphics if no sprite
+    if (!npcSprite) {
+      const graphics = this.add.graphics();
+      graphics.setDepth(3);
+
+      // NPC body
+      const colors = {
+        blacksmith: 0x8b4513,
+        merchant: 0x9b59b6,
+        alchemist: 0x27ae60,
+        lore_keeper: 0x6b5b95,
+        guard: 0x7f8c8d,
+      };
+
+      graphics.fillStyle(colors[type] || 0x7f8c8d, 1);
+      graphics.fillCircle(x, y - 8, 10);
+      graphics.fillStyle(0xf5deb3, 1);
+      graphics.fillCircle(x, y - 16, 8);
+    }
+
     // Name tag
     const nameText = this.add.text(x, y - 32, name, {
       fontSize: '10px',
       color: '#ffd66b',
       fontFamily: 'Space Grotesk',
     }).setOrigin(0.5).setDepth(10);
-    
+
     // NPC collision
     const npcHitbox = this.add.rectangle(x, y, 24, 24, 0x000000, 0);
     this.physics.add.existing(npcHitbox, true);
     this.obstacles.add(npcHitbox);
-    
-    this.npcs.push({ x, y, type, name, graphics, nameText, hitbox: npcHitbox });
+
+    this.npcs.push({ x, y, type, name, sprite: npcSprite, nameText, hitbox: npcHitbox });
   }
 
   createPlots() {
@@ -769,33 +1336,41 @@ class MainScene extends Phaser.Scene {
 
   spawnMobs() {
     const mobSpawns = [];
-    
-    // Generate spawn points based on terrain
-    for (let i = 0; i < 50; i++) {
+
+    // Generate spawn points based on terrain (more mobs for larger world)
+    const mobCount = 80; // Balanced for performance
+
+    for (let i = 0; i < mobCount; i++) {
       const x = Phaser.Math.Between(15, WORLD_SIZE - 15);
       const y = Phaser.Math.Between(15, WORLD_SIZE - 15);
-      
-      // Don't spawn in village
-      const centerDist = Math.hypot(x - WORLD_SIZE/2, y - WORLD_SIZE/2);
-      if (centerDist < 15) continue;
-      
-      const tileBiome = this.terrainData?.[y]?.[x]?.biome || 'meadow';
-      if (tileBiome === 'water') continue;
-      
-      let mobType = 'orc';
-      
-      // Biome-specific mobs
-      if (tileBiome === 'cave' || tileBiome === 'ruins') {
-        mobType = Math.random() < 0.4 ? 'skeleton' : Math.random() < 0.7 ? 'brute' : 'skeleton';
-      } else if (tileBiome === 'forest') {
-        mobType = Math.random() < 0.3 ? 'skeleton' : 'orc';
-      } else if (tileBiome === 'desert') {
-        mobType = Math.random() < 0.5 ? 'brute' : 'orc';
+
+      // Don't spawn in village safe zone
+      const centerDist = Math.hypot(x - VILLAGE_CENTER.x, y - VILLAGE_CENTER.y);
+      if (centerDist < VILLAGE_RADIUS + 5) continue;
+
+      // Get biome at this location
+      const tileBiome = getDirectionalBiome(x, y);
+      if (tileBiome === 'water' || tileBiome === 'village') continue;
+
+      // Get spawn table for this biome, default to meadow
+      const spawnTable = biomeSpawns[tileBiome] || biomeSpawns.meadow;
+
+      // Calculate weighted random selection
+      const totalWeight = spawnTable.reduce((sum, entry) => sum + entry.weight, 0);
+      let roll = Math.random() * totalWeight;
+      let mobType = spawnTable[0].type;
+
+      for (const entry of spawnTable) {
+        roll -= entry.weight;
+        if (roll <= 0) {
+          mobType = entry.type;
+          break;
+        }
       }
-      
+
       mobSpawns.push({ x: x * TILE, y: y * TILE, type: mobType });
     }
-    
+
     mobSpawns.forEach((spawn) => {
       this.spawnMob(spawn.type, spawn.x, spawn.y);
     });
@@ -807,9 +1382,44 @@ class MainScene extends Phaser.Scene {
 
     // Map sprite types to their idle animation keys
     const spriteToIdle = {
+      // Original enemies
       'orc': 'orc-idle',
       'skeleton': 'skeleton-idle',
       'bat': 'bat-idle',
+      'golem': 'orc-idle',
+      'elemental': 'orc-idle',
+      'wolf': 'orc-idle',
+      'slime': 'orc-idle',
+      'dragon': 'orc-idle',
+      // Forest - Elves (all use base sprite)
+      'elf_base': 'elf_base-idle',
+      'elf_hunter': 'elf_base-idle',
+      'elf_druid': 'elf_base-idle',
+      'elf_ranger': 'elf_base-idle',
+      // Desert - Mummies (all use base sprite)
+      'mummy_base': 'mummy_base-idle',
+      'mummy_warrior': 'mummy_base-idle',
+      'mummy_rogue': 'mummy_base-idle',
+      'mummy_mage': 'mummy_base-idle',
+      // Cemetery - Zombies (all use base sprite)
+      'zombie_base': 'zombie_base-idle',
+      'zombie_banshee': 'zombie_base-idle',
+      'zombie_muscle': 'zombie_base-idle',
+      'zombie_fat': 'zombie_base-idle',
+      // Sewer - Rats (all use base sprite)
+      'rat_base': 'rat_base-idle',
+      'rat_warrior': 'rat_base-idle',
+      'rat_rogue': 'rat_base-idle',
+      'rat_mage': 'rat_base-idle',
+      // Cave - Fungus (all use immature sprite)
+      'fungus_immature': 'fungus_immature-idle',
+      'fungus_long': 'fungus_immature-idle',
+      'fungus_heavy': 'fungus_immature-idle',
+      'fungus_old': 'fungus_immature-idle',
+      // Forge - Stone Golems (all use base sprite)
+      'stone_base': 'stone_base-idle',
+      'stone_golem': 'stone_base-idle',
+      'stone_lava': 'stone_base-idle',
     };
     const spriteKey = spriteToIdle[data.sprite] || 'orc-idle';
 
@@ -966,13 +1576,16 @@ class MainScene extends Phaser.Scene {
   }
 
   update(_, delta) {
+    // Update chunks based on player position (loads/unloads terrain)
+    this.updateChunks();
+
     this.updatePlayerMovement(delta);
     this.updateMobs(delta);
     this.updateCrafting(delta);
     this.tickFarming();
     this.updateUI();
     this.checkDungeonInteraction();
-    
+
     // Update player shadow
     if (this.playerShadow) {
       this.playerShadow.setPosition(this.player.x, this.player.y + 18);
@@ -1263,23 +1876,93 @@ class MainScene extends Phaser.Scene {
 
   updateMobs(delta) {
     const now = this.time.now;
-    
+
     this.mobs.forEach((mob) => {
       if (!mob.active) return;
-      
+
       const data = mobTypes[mob.data.get('type')];
       const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, mob.x, mob.y);
-      
+
       // Map sprite types to animation keys
       const spriteToRun = {
+        // Original enemies
         'orc': 'orc-run',
         'skeleton': 'skeleton-run',
         'bat': 'bat-move',
+        'golem': 'orc-run',
+        'elemental': 'orc-run',
+        'wolf': 'orc-run',
+        'slime': 'orc-run',
+        'dragon': 'orc-run',
+        // Forest - Elves (all use base sprite)
+        'elf_base': 'elf_base-run',
+        'elf_hunter': 'elf_base-run',
+        'elf_druid': 'elf_base-run',
+        'elf_ranger': 'elf_base-run',
+        // Desert - Mummies (all use base sprite)
+        'mummy_base': 'mummy_base-run',
+        'mummy_warrior': 'mummy_base-run',
+        'mummy_rogue': 'mummy_base-run',
+        'mummy_mage': 'mummy_base-run',
+        // Cemetery - Zombies (all use base sprite)
+        'zombie_base': 'zombie_base-run',
+        'zombie_banshee': 'zombie_base-run',
+        'zombie_muscle': 'zombie_base-run',
+        'zombie_fat': 'zombie_base-run',
+        // Sewer - Rats (all use base sprite)
+        'rat_base': 'rat_base-run',
+        'rat_warrior': 'rat_base-run',
+        'rat_rogue': 'rat_base-run',
+        'rat_mage': 'rat_base-run',
+        // Cave - Fungus (all use immature sprite)
+        'fungus_immature': 'fungus_immature-run',
+        'fungus_long': 'fungus_immature-run',
+        'fungus_heavy': 'fungus_immature-run',
+        'fungus_old': 'fungus_immature-run',
+        // Forge - Stone Golems (all use base sprite)
+        'stone_base': 'stone_base-run',
+        'stone_golem': 'stone_base-run',
+        'stone_lava': 'stone_base-run',
       };
       const spriteToIdle = {
+        // Original enemies
         'orc': 'orc-idle',
         'skeleton': 'skeleton-idle',
         'bat': 'bat-idle',
+        'golem': 'orc-idle',
+        'elemental': 'orc-idle',
+        'wolf': 'orc-idle',
+        'slime': 'orc-idle',
+        'dragon': 'orc-idle',
+        // Forest - Elves (all use base sprite)
+        'elf_base': 'elf_base-idle',
+        'elf_hunter': 'elf_base-idle',
+        'elf_druid': 'elf_base-idle',
+        'elf_ranger': 'elf_base-idle',
+        // Desert - Mummies (all use base sprite)
+        'mummy_base': 'mummy_base-idle',
+        'mummy_warrior': 'mummy_base-idle',
+        'mummy_rogue': 'mummy_base-idle',
+        'mummy_mage': 'mummy_base-idle',
+        // Cemetery - Zombies (all use base sprite)
+        'zombie_base': 'zombie_base-idle',
+        'zombie_banshee': 'zombie_base-idle',
+        'zombie_muscle': 'zombie_base-idle',
+        'zombie_fat': 'zombie_base-idle',
+        // Sewer - Rats (all use base sprite)
+        'rat_base': 'rat_base-idle',
+        'rat_warrior': 'rat_base-idle',
+        'rat_rogue': 'rat_base-idle',
+        'rat_mage': 'rat_base-idle',
+        // Cave - Fungus (all use immature sprite)
+        'fungus_immature': 'fungus_immature-idle',
+        'fungus_long': 'fungus_immature-idle',
+        'fungus_heavy': 'fungus_immature-idle',
+        'fungus_old': 'fungus_immature-idle',
+        // Forge - Stone Golems (all use base sprite)
+        'stone_base': 'stone_base-idle',
+        'stone_golem': 'stone_base-idle',
+        'stone_lava': 'stone_base-idle',
       };
 
       if (dist < data.aggroRange) {
@@ -1434,15 +2117,34 @@ class MainScene extends Phaser.Scene {
   }
   
   handleNPCInteraction() {
-    const nearNPC = this.npcs.find((npc) => 
+    const nearNPC = this.npcs.find((npc) =>
       Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y) < 50
     );
-    
+
     if (!nearNPC) return false;
-    
+
     let content = '';
-    
-    if (nearNPC.type === 'merchant') {
+
+    // Handle shop NPCs
+    if (nearNPC.type === 'shop' && nearNPC.shopId) {
+      this.renderShopPanel(nearNPC.shopId);
+      return true;
+    }
+
+    // Handle flavor NPCs with dialogue
+    if (nearNPC.type === 'lore_keeper') {
+      content = `
+        <h2>${nearNPC.name}</h2>
+        <section>"The world grows darker beyond the village walls. To the north, the forest elves guard ancient secrets. East lies the scorched desert, home to the restless dead. South, the cemetery holds terrors untold. And to the west... the sewers breed unspeakable creatures."</section>
+        <section class="keybinds">Seek strength before venturing far.</section>
+      `;
+    } else if (nearNPC.type === 'guard') {
+      content = `
+        <h2>${nearNPC.name}</h2>
+        <section>"Keep your blade sharp, adventurer. The creatures grow bolder each day. We've lost good men to those elves in the northern woods."</section>
+        <section class="keybinds">The village is safe. Beyond... be wary.</section>
+      `;
+    } else if (nearNPC.type === 'merchant') {
       content = `
         <h2>${nearNPC.name}</h2>
         <section>"Welcome, traveler! Looking to trade?"</section>
@@ -1465,9 +2167,56 @@ class MainScene extends Phaser.Scene {
         <section class="keybinds">Bring Sunroot Bulbs to create potions.</section>
       `;
     }
-    
+
+    if (content) {
+      renderPanel(content);
+      return true;
+    }
+
+    return false;
+  }
+
+  renderShopPanel(shopId) {
+    const shop = shops[shopId];
+    if (!shop) return;
+
+    // Get random dialogue
+    const dialogue = shop.dialogues[Math.floor(Math.random() * shop.dialogues.length)];
+
+    // Build inventory buttons
+    let buyButtons = shop.inventory.map((item) => {
+      const itemData = items[item.id];
+      const canAfford = playerState.coins >= item.buyPrice;
+      const name = itemData?.name || item.id;
+      return `<button class="${canAfford ? '' : 'disabled'}" onclick="window.buyFromShop('${shopId}', '${item.id}', ${item.buyPrice})">${name} - ${item.buyPrice}g</button>`;
+    }).join('');
+
+    // Build sell buttons for items player has that this shop buys
+    let sellButtons = '';
+    const sellableItems = Object.entries(playerState.inventory)
+      .filter(([id, qty]) => {
+        const itemData = items[id];
+        return qty > 0 && itemData && shop.buysTypes.includes(itemData.type);
+      })
+      .map(([id, qty]) => {
+        const itemData = items[id];
+        const sellPrice = Math.floor((itemData.value || 1) * shop.sellMultiplier);
+        return `<button onclick="window.sellToShop('${shopId}', '${id}', ${sellPrice})">${itemData.name} x${qty} - ${sellPrice}g ea</button>`;
+      });
+
+    if (sellableItems.length > 0) {
+      sellButtons = `<section class="shop-sell"><h3>Sell Items</h3>${sellableItems.join('')}</section>`;
+    }
+
+    const content = `
+      <h2>${shop.name}</h2>
+      <section class="npc-dialogue">"${dialogue}"</section>
+      <section class="shop-info">Your Gold: <span class="gold">${playerState.coins}g</span></section>
+      <section class="shop-buy"><h3>Buy Items</h3>${buyButtons}</section>
+      ${sellButtons}
+    `;
+
     renderPanel(content);
-    return true;
   }
   
   checkDungeonInteraction(interact = false) {
@@ -1640,41 +2389,64 @@ class MainScene extends Phaser.Scene {
   }
 
   addStation(station) {
-    const graphics = this.add.graphics();
-    graphics.setDepth(3);
-    
-    // Station colors
-    const colors = {
-      forge: { fill: 0xd35400, stroke: 0xff6b35 },
-      tanner: { fill: 0x8b4513, stroke: 0xcd853f },
-      alchemist: { fill: 0x27ae60, stroke: 0x2ecc71 },
+    // Map station types to sprite keys
+    const stationSprites = {
+      forge: 'station-furnace',
+      tanner: 'station-workbench',
+      alchemist: 'station-alchemy',
     };
-    
-    const color = colors[station.type] || colors.forge;
-    
-    // Draw station
-    graphics.fillStyle(color.fill, 0.9);
-    graphics.fillRect(station.x - 16, station.y - 12, 32, 24);
-    graphics.lineStyle(2, color.stroke, 1);
-    graphics.strokeRect(station.x - 16, station.y - 12, 32, 24);
-    
-    // Icon
-    graphics.fillStyle(0xffffff, 0.3);
-    if (station.type === 'forge') {
-      graphics.fillTriangle(station.x, station.y - 8, station.x - 6, station.y + 4, station.x + 6, station.y + 4);
-    } else if (station.type === 'alchemist') {
-      graphics.fillCircle(station.x, station.y, 6);
+
+    const spriteKey = stationSprites[station.type];
+    let stationSprite = null;
+
+    // Try to use actual sprite
+    if (spriteKey && this.textures.exists(spriteKey)) {
+      stationSprite = this.add.sprite(station.x, station.y, spriteKey);
+      stationSprite.setScale(0.5); // Scale down from 192x384 to reasonable size
+      stationSprite.setOrigin(0.5, 0.7); // Adjust origin so it sits on ground
+      stationSprite.setDepth(3);
+
+      // If it's a spritesheet (like alchemy), set to first frame
+      if (spriteKey === 'station-alchemy' && this.anims.exists('station-alchemy')) {
+        stationSprite.play('station-alchemy');
+      }
     } else {
-      graphics.fillRect(station.x - 6, station.y - 4, 12, 8);
+      // Fallback to graphics
+      const graphics = this.add.graphics();
+      graphics.setDepth(3);
+
+      const colors = {
+        forge: { fill: 0xd35400, stroke: 0xff6b35 },
+        tanner: { fill: 0x8b4513, stroke: 0xcd853f },
+        alchemist: { fill: 0x27ae60, stroke: 0x2ecc71 },
+      };
+
+      const color = colors[station.type] || colors.forge;
+
+      graphics.fillStyle(color.fill, 0.9);
+      graphics.fillRect(station.x - 16, station.y - 12, 32, 24);
+      graphics.lineStyle(2, color.stroke, 1);
+      graphics.strokeRect(station.x - 16, station.y - 12, 32, 24);
+
+      graphics.fillStyle(0xffffff, 0.3);
+      if (station.type === 'forge') {
+        graphics.fillTriangle(station.x, station.y - 8, station.x - 6, station.y + 4, station.x + 6, station.y + 4);
+      } else if (station.type === 'alchemist') {
+        graphics.fillCircle(station.x, station.y, 6);
+      } else {
+        graphics.fillRect(station.x - 6, station.y - 4, 12, 8);
+      }
+
+      stationSprite = graphics;
     }
-    
-    const label = this.add.text(station.x, station.y - 22, station.label || station.type, {
+
+    const label = this.add.text(station.x, station.y - 35, station.label || station.type, {
       fontSize: '9px',
       color: '#ffd66b',
       fontFamily: 'Space Grotesk',
     }).setOrigin(0.5).setDepth(10);
-    
-    const full = { ...station, graphics, labelText: label };
+
+    const full = { ...station, graphics: stationSprite, labelText: label };
     this.stations.push(full);
     return full;
   }
@@ -1695,7 +2467,7 @@ window.buyItem = (itemId, cost) => {
 window.sellAll = () => {
   const sellable = ['bone', 'leather', 'iron_ore', 'coal'];
   let total = 0;
-  
+
   sellable.forEach((id) => {
     const qty = playerState.inventory[id] || 0;
     if (qty > 0) {
@@ -1704,7 +2476,7 @@ window.sellAll = () => {
       delete playerState.inventory[id];
     }
   });
-  
+
   if (total > 0) {
     playerState.coins += total;
     logEvent(`Sold loot for ${total}g!`);
@@ -1714,8 +2486,71 @@ window.sellAll = () => {
   }
 };
 
+// Shop-specific buy/sell functions
+window.buyFromShop = (shopId, itemId, cost) => {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  if (playerState.coins < cost) {
+    logEvent(`Not enough coins. Need ${cost}g.`);
+    return;
+  }
+
+  // Verify item is in shop inventory
+  const shopItem = shop.inventory.find(i => i.id === itemId);
+  if (!shopItem) {
+    logEvent('Item not available.');
+    return;
+  }
+
+  playerState.coins -= cost;
+  addItem(itemId, 1);
+  logEvent(`Bought ${items[itemId]?.name || itemId} for ${cost}g.`);
+  updateHUD();
+
+  // Refresh shop panel
+  if (window.gameScene && window.gameScene.renderShopPanel) {
+    window.gameScene.renderShopPanel(shopId);
+  }
+};
+
+window.sellToShop = (shopId, itemId, priceEach) => {
+  const shop = shops[shopId];
+  if (!shop) return;
+
+  const itemData = items[itemId];
+  if (!itemData) return;
+
+  // Check shop buys this type
+  if (!shop.buysTypes.includes(itemData.type)) {
+    logEvent(`${shop.name} doesn't buy that.`);
+    return;
+  }
+
+  const qty = playerState.inventory[itemId] || 0;
+  if (qty <= 0) {
+    logEvent('You don\'t have any to sell.');
+    return;
+  }
+
+  // Sell one item at a time
+  playerState.inventory[itemId]--;
+  if (playerState.inventory[itemId] <= 0) {
+    delete playerState.inventory[itemId];
+  }
+
+  playerState.coins += priceEach;
+  logEvent(`Sold ${itemData.name} for ${priceEach}g.`);
+  updateHUD();
+
+  // Refresh shop panel
+  if (window.gameScene && window.gameScene.renderShopPanel) {
+    window.gameScene.renderShopPanel(shopId);
+  }
+};
+
 const config = {
-  type: Phaser.CANVAS, // Use CANVAS for better compatibility
+  type: Phaser.AUTO,
   width: window.innerWidth,
   height: window.innerHeight,
   parent: 'game-root',
@@ -1727,7 +2562,6 @@ const config = {
   scene: [BootScene, MainScene],
   render: {
     pixelArt: true,
-    antialias: false,
   },
 };
 
