@@ -27,8 +27,8 @@ const MOB_SCALE = 1.0;
 const LOG_LIMIT = 6;
 
 // Chunk-based loading system for performance
-const CHUNK_SIZE = 16; // tiles per chunk side
-const RENDER_DISTANCE = 2; // chunks to load in each direction (reduced for performance)
+const CHUNK_SIZE = 12; // smaller chunks for better performance
+const RENDER_DISTANCE = 2; // chunks to load in each direction
 const MOBS_PER_CHUNK = 1; // max mobs spawned per chunk
 
 // Directional biome determination based on angle from village center
@@ -774,47 +774,8 @@ class MainScene extends Phaser.Scene {
       }
     }
 
-    // Second pass: Add sparse ground decorations (grass tufts, flowers, pebbles)
-    // Skip every other tile for performance
-    for (let ty = 0; ty < CHUNK_SIZE; ty += 2) {
-      for (let tx = 0; tx < CHUNK_SIZE; tx += 2) {
-        const worldTileX = startX + tx;
-        const worldTileY = startY + ty;
-        if (worldTileX >= WORLD_SIZE || worldTileY >= WORLD_SIZE) continue;
-
-        const biome = this.terrainData[worldTileY]?.[worldTileX]?.biome || 'meadow';
-        if (biome === 'water' || biome === 'village') continue;
-
-        const px = worldTileX * TILE;
-        const py = worldTileY * TILE;
-
-        // Ground details - reduced count
-        this.addDenseGroundDetails(px, py, worldTileX, worldTileY, biome, chunkData);
-      }
-    }
-
-    // Third pass: Add mid-level decorations (bushes, small rocks, plants)
-    for (let ty = 0; ty < CHUNK_SIZE; ty++) {
-      for (let tx = 0; tx < CHUNK_SIZE; tx++) {
-        const worldTileX = startX + tx;
-        const worldTileY = startY + ty;
-        if (worldTileX >= WORLD_SIZE || worldTileY >= WORLD_SIZE) continue;
-
-        const biome = this.terrainData[worldTileY]?.[worldTileX]?.biome || 'meadow';
-        if (biome === 'water' || biome === 'village') continue;
-
-        const px = worldTileX * TILE;
-        const py = worldTileY * TILE;
-
-        // Mid-level props with moderate density
-        const propRand = seededRandom(worldTileX * 4000 + worldTileY + this.worldSeed);
-        if (propRand < this.getBiomePropDensity(biome)) {
-          const prop = this.addBiomeProp(px, py, worldTileX, worldTileY, biome, chunkData);
-          // Hide props from minimap
-          if (prop) this.hideFromMinimap(prop);
-        }
-      }
-    }
+    // Skip ground details and mid-level props for performance
+    // Only render trees/obstacles (fourth pass below)
 
     // Fourth pass: Add large obstacles (trees, large rocks) with collision
     // Use organic clustering via perlin noise
@@ -1042,23 +1003,22 @@ class MainScene extends Phaser.Scene {
   
   // Use perlin noise for organic tree clustering
   shouldSpawnTree(tileX, tileY, biome) {
-    // Very sparse for performance - only ~2-4% coverage in forests
+    // Very sparse for performance
     const baseDensity = {
-      forest: 0.025,
-      meadow: 0.008,
-      cemetery: 0.012,
-      cave: 0.01,
-      forge: 0.008,
-      sewer: 0.006,
-      desert: 0.005,
-    }[biome] || 0.006;
+      forest: 0.015,
+      meadow: 0.004,
+      cemetery: 0.006,
+      cave: 0.005,
+      forge: 0.003,
+      sewer: 0.003,
+      desert: 0.002,
+    }[biome] || 0.003;
     
-    // Use perlin noise for natural clustering - trees group together
-    const clusterNoise = perlinNoise(tileX * 0.2, tileY * 0.2, 2, 0.5, this.worldSeed + 7777);
+    // Use perlin noise for natural clustering
+    const clusterNoise = perlinNoise(tileX * 0.12, tileY * 0.12, 2, 0.5, this.worldSeed + 7777);
     const detailNoise = seededRandom(tileX * 9999 + tileY + this.worldSeed);
     
-    // Trees spawn more in high-noise areas (creates groves/clearings)
-    const threshold = baseDensity * (0.3 + clusterNoise * 1.0);
+    const threshold = baseDensity * (0.4 + clusterNoise * 0.8);
     return detailNoise < threshold;
   }
 
@@ -1326,12 +1286,15 @@ class MainScene extends Phaser.Scene {
       this.waterBodies.remove(w, true, true);
     });
 
-    // Remove mobs
+    // Remove mobs and their HP bars
     chunkData.mobs.forEach(mob => {
-      if (mob && mob.destroy) {
+      if (mob) {
         const idx = this.mobs.indexOf(mob);
         if (idx > -1) this.mobs.splice(idx, 1);
-        mob.destroy();
+        // Destroy HP bars first
+        if (mob.hpBar) mob.hpBar.destroy();
+        if (mob.hpBarBg) mob.hpBarBg.destroy();
+        if (mob.destroy) mob.destroy();
       }
     });
 
@@ -1436,212 +1399,208 @@ class MainScene extends Phaser.Scene {
     const rand = seededRandom(tileX * 7777 + tileY * 13 + this.worldSeed);
     const rand2 = seededRandom(tileX * 3333 + tileY * 17 + this.worldSeed + 500);
     const rand3 = seededRandom(tileX * 5555 + tileY * 19 + this.worldSeed + 1000);
+    const rand4 = seededRandom(tileX * 1111 + tileY * 23 + this.worldSeed + 1500);
+    const rand5 = seededRandom(tileX * 2222 + tileY * 29 + this.worldSeed + 2000);
     let shadow = null;
     let extras = [];
+    
+    // Add organic position offset (up to half a tile in any direction)
+    const offsetX = (rand4 - 0.5) * TILE * 0.7;
+    const offsetY = (rand5 - 0.5) * TILE * 0.5;
+    const actualX = x + offsetX;
+    const actualY = y + offsetY;
 
     if (biome === 'forest') {
-      // Forest trees - use only 2-3 tree types for consistency, vary by position
-      const treeModels = [
-        { key: 'tree-1-medium', scale: 0.42 },
-        { key: 'tree-2-medium', scale: 0.45 },
-        { key: 'tree-3-medium', scale: 0.38 },
-      ];
+      // Use perlin noise to determine tree FAMILY for this region (creates consistent groves)
+      const regionNoise = perlinNoise(tileX * 0.08, tileY * 0.08, 2, 0.5, this.worldSeed + 3333);
+      const treeFamily = Math.floor(regionNoise * 3) + 1; // 1, 2, or 3
+      const treeKey = `tree-${treeFamily}-medium`;
       
-      // Use fairy forest tree occasionally for variety
-      if (rand < 0.15 && this.textures.exists('tree-forest')) {
+      // Occasional fairy tree in glades
+      if (rand < 0.08 && this.textures.exists('tree-forest')) {
         const scale = 0.28 + rand2 * 0.12;
-        shadow = this.add.ellipse(x, y + 15, 45 * scale, 18 * scale, 0x000000, 0.3);
-        shadow.setDepth(y - 1);
-        visual = this.add.sprite(x, y, 'tree-forest');
+        shadow = this.add.ellipse(actualX, actualY + 15, 40 * scale, 16 * scale, 0x000000, 0.3);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.sprite(actualX, actualY, 'tree-forest');
         visual.setScale(scale);
         visual.setOrigin(0.5, 0.95);
-        visual.setDepth(y);
-      } else {
-        // Pick tree model based on position for local consistency
-        const modelIndex = Math.floor((tileX + tileY * 3) % treeModels.length);
-        const tree = treeModels[modelIndex];
-        if (this.textures.exists(tree.key)) {
-          // Slight scale variation
-          const scale = tree.scale + (rand2 - 0.5) * 0.08;
-          shadow = this.add.ellipse(x, y + 12, 32 * scale, 13 * scale, 0x000000, 0.25);
-          shadow.setDepth(y - 1);
-          visual = this.add.sprite(x, y, tree.key);
-          visual.setScale(scale);
-          visual.setOrigin(0.5, 0.95);
-          visual.setDepth(y);
-        }
+        visual.setDepth(actualY);
+        visual.setFlipX(rand3 > 0.5);
+      } else if (this.textures.exists(treeKey)) {
+        // Use consistent tree family with size variation only
+        const scale = 0.35 + rand2 * 0.18; // Size variation within same type
+        shadow = this.add.ellipse(actualX, actualY + 12, 28 * scale, 11 * scale, 0x000000, 0.25);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.sprite(actualX, actualY, treeKey);
+        visual.setScale(scale);
+        visual.setOrigin(0.5, 0.95);
+        visual.setDepth(actualY);
+        visual.setFlipX(rand3 > 0.5);
       }
     } else if (biome === 'meadow') {
-      // Meadow - smaller trees and large bushes
-      if (rand < 0.65) {
-        const treeModels = ['tree-1-small', 'tree-2-small', 'tree-3-small'];
-        // Pick based on position for local consistency
-        const modelIndex = Math.floor((tileX * 2 + tileY) % treeModels.length);
-        const treeKey = treeModels[modelIndex];
-        const scale = 0.32 + rand2 * 0.1;
+      // Meadow - sparse small trees or bushes
+      if (rand < 0.7) {
+        // Use same tree family concept for meadow
+        const regionNoise = perlinNoise(tileX * 0.1, tileY * 0.1, 2, 0.5, this.worldSeed + 4444);
+        const treeFamily = Math.floor(regionNoise * 3) + 1;
+        const treeKey = `tree-${treeFamily}-small`;
+        const scale = 0.28 + rand2 * 0.12;
         
         if (this.textures.exists(treeKey)) {
-          shadow = this.add.ellipse(x, y + 10, 26 * scale, 10 * scale, 0x000000, 0.2);
-          shadow.setDepth(y - 1);
-          visual = this.add.sprite(x, y, treeKey);
+          shadow = this.add.ellipse(actualX, actualY + 8, 20 * scale, 8 * scale, 0x000000, 0.2);
+          shadow.setDepth(actualY - 1);
+          visual = this.add.sprite(actualX, actualY, treeKey);
           visual.setScale(scale);
           visual.setOrigin(0.5, 0.95);
-          visual.setDepth(y);
+          visual.setDepth(actualY);
+          visual.setFlipX(rand3 > 0.5);
         }
       } else {
-        // Large flowering bush
-        const bushSize = 16 + rand * 10;
-        shadow = this.add.ellipse(x, y + bushSize * 0.25, bushSize * 0.8, bushSize * 0.25, 0x000000, 0.15);
-        shadow.setDepth(y - 1);
-        visual = this.add.ellipse(x, y - bushSize * 0.15, bushSize, bushSize * 0.7, 0x4a8c3f, 1);
-        visual.setDepth(y);
-        // Flowers on bush (seeded positions)
-        const flowerColors = [0xff6b6b, 0xffd93d, 0xff9ff3, 0x6bcb77];
-        for (let i = 0; i < 3; i++) {
-          const fx = x + (seededRandom(tileX * 100 + i + this.worldSeed) - 0.5) * bushSize * 0.7;
-          const fy = y - bushSize * 0.15 + (seededRandom(tileY * 100 + i + this.worldSeed) - 0.5) * bushSize * 0.4;
-          const flower = this.add.circle(fx, fy, 2.5, flowerColors[i % flowerColors.length], 0.9);
-          flower.setDepth(y + 1);
-          extras.push(flower);
-        }
+        // Simple bush (no flowers for performance)
+        const bushSize = 12 + rand * 8;
+        shadow = this.add.ellipse(actualX, actualY + bushSize * 0.2, bushSize * 0.7, bushSize * 0.2, 0x000000, 0.15);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.ellipse(actualX, actualY - bushSize * 0.1, bushSize, bushSize * 0.6, 0x4a8c3f, 1);
+        visual.setDepth(actualY);
       }
     } else if (biome === 'desert') {
       // Desert - large rocks and dead trees
       if (rand < 0.7) {
         const rockSize = 18 + rand * 15;
-        shadow = this.add.ellipse(x, y + rockSize * 0.15, rockSize * 0.9, rockSize * 0.3, 0x000000, 0.2);
-        shadow.setDepth(y - 1);
+        shadow = this.add.ellipse(actualX, actualY + rockSize * 0.15, rockSize * 0.9, rockSize * 0.3, 0x000000, 0.2);
+        shadow.setDepth(actualY - 1);
         // Main rock body
-        visual = this.add.ellipse(x, y - rockSize * 0.2, rockSize, rockSize * 0.65, 0xb8956a, 1);
-        visual.setDepth(y);
+        visual = this.add.ellipse(actualX, actualY - rockSize * 0.2, rockSize, rockSize * 0.65, 0xb8956a, 1);
+        visual.setDepth(actualY);
         // Rock highlight
-        const highlight = this.add.ellipse(x - rockSize * 0.2, y - rockSize * 0.35, rockSize * 0.35, rockSize * 0.2, 0xc8a57a, 0.6);
-        highlight.setDepth(y + 0.1);
+        const highlight = this.add.ellipse(actualX - rockSize * 0.2, actualY - rockSize * 0.35, rockSize * 0.35, rockSize * 0.2, 0xc8a57a, 0.6);
+        highlight.setDepth(actualY + 0.1);
         extras.push(highlight);
       } else {
         // Dead tree / cactus large
         const height = 25 + rand * 15;
-        shadow = this.add.ellipse(x, y + 3, 12, 5, 0x000000, 0.15);
-        shadow.setDepth(y - 1);
-        visual = this.add.rectangle(x, y - height/2, 8, height, 0x2d8659, 1);
-        visual.setDepth(y);
+        shadow = this.add.ellipse(actualX, actualY + 3, 12, 5, 0x000000, 0.15);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.rectangle(actualX, actualY - height/2, 8, height, 0x2d8659, 1);
+        visual.setDepth(actualY);
         // Side arms
-        const arm1 = this.add.rectangle(x - 10, y - height * 0.5, 12, 6, 0x2d8659, 1);
-        arm1.setDepth(y);
+        const arm1 = this.add.rectangle(actualX - 10, actualY - height * 0.5, 12, 6, 0x2d8659, 1);
+        arm1.setDepth(actualY);
         extras.push(arm1);
-        const arm2 = this.add.rectangle(x + 10, y - height * 0.3, 12, 6, 0x2d8659, 1);
-        arm2.setDepth(y);
+        const arm2 = this.add.rectangle(actualX + 10, actualY - height * 0.3, 12, 6, 0x2d8659, 1);
+        arm2.setDepth(actualY);
         extras.push(arm2);
       }
     } else if (biome === 'cemetery') {
       // Cemetery - dead trees and large monuments
       if (rand < 0.3 && this.textures.exists('tree-cemetery')) {
         const scale = 0.3 + rand2 * 0.15;
-        shadow = this.add.ellipse(x, y + 10, 30 * scale, 12 * scale, 0x000000, 0.25);
-        shadow.setDepth(y - 1);
-        visual = this.add.sprite(x, y, 'tree-cemetery');
+        shadow = this.add.ellipse(actualX, actualY + 10, 30 * scale, 12 * scale, 0x000000, 0.25);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.sprite(actualX, actualY, 'tree-cemetery');
         visual.setScale(scale);
         visual.setOrigin(0.5, 0.95);
-        visual.setDepth(y);
+        visual.setDepth(actualY);
+        visual.setFlipX(rand3 > 0.5);
       } else if (rand < 0.6) {
         // Large gravestone monument
         const height = 24 + rand * 12;
-        shadow = this.add.ellipse(x, y + 3, 14, 5, 0x000000, 0.2);
-        shadow.setDepth(y - 1);
-        visual = this.add.polygon(x, y, [
+        shadow = this.add.ellipse(actualX, actualY + 3, 14, 5, 0x000000, 0.2);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.polygon(actualX, actualY, [
           -8, height/2, -8, -height/3, -5, -height/2, 5, -height/2, 8, -height/3, 8, height/2
         ], 0x5a5a6a, 1);
-        visual.setDepth(y);
+        visual.setDepth(actualY);
         // Cross or decoration on top
-        const cross = this.add.polygon(x, y - height/2 - 4, [
+        const cross = this.add.polygon(actualX, actualY - height/2 - 4, [
           -2, 4, -2, 0, -5, 0, -5, -2, -2, -2, -2, -6, 2, -6, 2, -2, 5, -2, 5, 0, 2, 0, 2, 4
         ], 0x4a4a5a, 1);
-        cross.setDepth(y + 0.1);
+        cross.setDepth(actualY + 0.1);
         extras.push(cross);
       } else {
         // Gnarled dead tree (no sprite)
         const trunkHeight = 20 + rand * 10;
-        shadow = this.add.ellipse(x, y + 3, 15, 6, 0x000000, 0.2);
-        shadow.setDepth(y - 1);
-        visual = this.add.polygon(x, y, [
+        shadow = this.add.ellipse(actualX, actualY + 3, 15, 6, 0x000000, 0.2);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.polygon(actualX, actualY, [
           -4, trunkHeight/2, -5, 0, -3, -trunkHeight/2, 
           -8, -trunkHeight * 0.7, -2, -trunkHeight * 0.6,
           0, -trunkHeight, 2, -trunkHeight * 0.6, 8, -trunkHeight * 0.7,
           3, -trunkHeight/2, 5, 0, 4, trunkHeight/2
         ], 0x3a2a1a, 1);
-        visual.setDepth(y);
+        visual.setDepth(actualY);
       }
     } else if (biome === 'cave') {
       // Cave - large stalagmites and crystal formations
       if (rand < 0.5) {
         const height = 25 + rand * 20;
-        visual = this.add.polygon(x, y, [
+        visual = this.add.polygon(actualX, actualY, [
           0, -height, -8, 0, -4, height/3, 4, height/3, 8, 0
         ], 0x5a5a6a, 1);
-        visual.setDepth(y);
+        visual.setDepth(actualY);
         // Darker base
-        const base = this.add.polygon(x, y + height/3 - 2, [
+        const base = this.add.polygon(actualX, actualY + height/3 - 2, [
           -6, -4, -4, 4, 4, 4, 6, -4
         ], 0x4a4a5a, 1);
-        base.setDepth(y - 0.1);
+        base.setDepth(actualY - 0.1);
         extras.push(base);
       } else {
         // Large crystal cluster
         const crystalColor = rand2 < 0.5 ? 0x7a7aaa : 0x5a9a9a;
-        visual = this.add.polygon(x, y, [
+        visual = this.add.polygon(actualX, actualY, [
           0, -25, -5, -10, -10, 0, -5, 5, 5, 5, 10, 0, 5, -10
         ], crystalColor, 0.9);
-        visual.setDepth(y);
+        visual.setDepth(actualY);
         // Glow effect
-        const glow = this.add.circle(x, y - 12, 18, crystalColor, 0.15);
-        glow.setDepth(y - 0.5);
+        const glow = this.add.circle(actualX, actualY - 12, 18, crystalColor, 0.15);
+        glow.setDepth(actualY - 0.5);
         extras.push(glow);
       }
     } else if (biome === 'forge') {
       // Forge - volcanic rocks with lava cracks
       const rockSize = 20 + rand * 15;
-      shadow = this.add.ellipse(x, y + rockSize * 0.15, rockSize * 0.9, rockSize * 0.3, 0x000000, 0.2);
-      shadow.setDepth(y - 1);
-      visual = this.add.ellipse(x, y - rockSize * 0.2, rockSize, rockSize * 0.65, 0x4a2a2a, 1);
-      visual.setDepth(y);
-      // Lava cracks
+      shadow = this.add.ellipse(actualX, actualY + rockSize * 0.15, rockSize * 0.9, rockSize * 0.3, 0x000000, 0.2);
+      shadow.setDepth(actualY - 1);
+      visual = this.add.ellipse(actualX, actualY - rockSize * 0.2, rockSize, rockSize * 0.65, 0x4a2a2a, 1);
+      visual.setDepth(actualY);
+      // Lava cracks (seeded positions)
       for (let i = 0; i < 3; i++) {
-        const crackX = x + (Math.random() - 0.5) * rockSize * 0.6;
-        const crackY = y - rockSize * 0.2 + (Math.random() - 0.5) * rockSize * 0.4;
-        const crack = this.add.ellipse(crackX, crackY, 3 + Math.random() * 4, 2, 0xff6b35, 0.8);
-        crack.setDepth(y + 0.1);
+        const crackX = actualX + (seededRandom(tileX * 50 + i + this.worldSeed) - 0.5) * rockSize * 0.6;
+        const crackY = actualY - rockSize * 0.2 + (seededRandom(tileY * 50 + i + this.worldSeed) - 0.5) * rockSize * 0.4;
+        const crack = this.add.ellipse(crackX, crackY, 3 + rand2 * 4, 2, 0xff6b35, 0.8);
+        crack.setDepth(actualY + 0.1);
         extras.push(crack);
       }
       // Smoke/heat shimmer
-      const smoke = this.add.circle(x, y - rockSize * 0.5, 8, 0xff6b35, 0.1);
-      smoke.setDepth(y + 0.2);
+      const smoke = this.add.circle(actualX, actualY - rockSize * 0.5, 8, 0xff6b35, 0.1);
+      smoke.setDepth(actualY + 0.2);
       extras.push(smoke);
     } else if (biome === 'sewer') {
       // Sewer - pipes and debris piles
       if (rand < 0.5) {
         // Large pipe
         const pipeWidth = 20 + rand * 10;
-        shadow = this.add.ellipse(x, y + 3, pipeWidth * 0.8, 4, 0x000000, 0.15);
-        shadow.setDepth(y - 1);
-        visual = this.add.ellipse(x, y - 4, pipeWidth, 12, 0x5a5a5a, 1);
-        visual.setDepth(y);
+        shadow = this.add.ellipse(actualX, actualY + 3, pipeWidth * 0.8, 4, 0x000000, 0.15);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.ellipse(actualX, actualY - 4, pipeWidth, 12, 0x5a5a5a, 1);
+        visual.setDepth(actualY);
         // Pipe opening
-        const opening = this.add.ellipse(x + pipeWidth * 0.4, y - 4, 6, 10, 0x2a2a2a, 1);
-        opening.setDepth(y + 0.1);
+        const opening = this.add.ellipse(actualX + pipeWidth * 0.4, actualY - 4, 6, 10, 0x2a2a2a, 1);
+        opening.setDepth(actualY + 0.1);
         extras.push(opening);
       } else {
         // Debris pile
         const pileSize = 15 + rand * 10;
-        shadow = this.add.ellipse(x, y + 2, pileSize, pileSize * 0.3, 0x000000, 0.15);
-        shadow.setDepth(y - 1);
-        visual = this.add.ellipse(x, y - pileSize * 0.15, pileSize, pileSize * 0.5, 0x4a4a4a, 1);
-        visual.setDepth(y);
-        // Debris items on top
+        shadow = this.add.ellipse(actualX, actualY + 2, pileSize, pileSize * 0.3, 0x000000, 0.15);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.ellipse(actualX, actualY - pileSize * 0.15, pileSize, pileSize * 0.5, 0x4a4a4a, 1);
+        visual.setDepth(actualY);
+        // Debris items on top (seeded positions)
         for (let i = 0; i < 3; i++) {
-          const debrisX = x + (Math.random() - 0.5) * pileSize * 0.6;
-          const debrisY = y - pileSize * 0.2 + (Math.random() - 0.5) * pileSize * 0.3;
-          const debris = this.add.rectangle(debrisX, debrisY, 4 + Math.random() * 4, 3 + Math.random() * 3, 0x5a4a3a, 0.8);
-          debris.setDepth(y + 0.1);
+          const debrisX = actualX + (seededRandom(tileX * 60 + i + this.worldSeed) - 0.5) * pileSize * 0.6;
+          const debrisY = actualY - pileSize * 0.2 + (seededRandom(tileY * 60 + i + this.worldSeed) - 0.5) * pileSize * 0.3;
+          const debris = this.add.rectangle(debrisX, debrisY, 4 + rand2 * 4, 3 + rand3 * 3, 0x5a4a3a, 0.8);
+          debris.setDepth(actualY + 0.1);
           extras.push(debris);
         }
       }
@@ -1652,15 +1611,15 @@ class MainScene extends Phaser.Scene {
     // Fallback - medium rock
     if (!visual) {
       const rockSize = 12 + rand * 8;
-      shadow = this.add.ellipse(x, y + 3, rockSize, rockSize * 0.3, 0x000000, 0.2);
-      shadow.setDepth(y - 1);
-      visual = this.add.ellipse(x, y - rockSize/4, rockSize, rockSize * 0.55, 0x6a6a6a, 1);
-      visual.setDepth(y);
+      shadow = this.add.ellipse(actualX, actualY + 3, rockSize, rockSize * 0.3, 0x000000, 0.2);
+      shadow.setDepth(actualY - 1);
+      visual = this.add.ellipse(actualX, actualY - rockSize/4, rockSize, rockSize * 0.55, 0x6a6a6a, 1);
+      visual.setDepth(actualY);
     }
 
-    // Add collision
+    // Add collision at actual position
     const colliderSize = biome === 'forest' ? 20 : 18;
-    const collider = this.add.rectangle(x, y + 4, colliderSize, colliderSize, 0x000000, 0);
+    const collider = this.add.rectangle(actualX, actualY + 4, colliderSize, colliderSize, 0x000000, 0);
     this.physics.add.existing(collider, true);
     this.obstacles.add(collider);
 
@@ -1698,77 +1657,105 @@ class MainScene extends Phaser.Scene {
   createVillage() {
     const centerX = VILLAGE_CENTER.x * TILE;
     const centerY = VILLAGE_CENTER.y * TILE;
+    const graphics = this.add.graphics();
+    graphics.setDepth(1);
 
-    // Village crafting stations (from villageLayout)
-    const stationPositions = villageLayout.stationPositions;
+    // === VILLAGE GROUND ===
+    // Main village square - packed dirt
+    graphics.fillStyle(0xc4a574, 1);
+    graphics.fillRect(centerX - TILE * 8, centerY - TILE * 8, TILE * 16, TILE * 16);
+    
+    // Cobblestone paths
+    graphics.fillStyle(0x8b8b8b, 0.8);
+    // Main crossroads
+    for (let i = -8; i <= 8; i++) {
+      graphics.fillRect(centerX - TILE * 1.5, centerY + i * TILE, TILE * 3, TILE);
+      graphics.fillRect(centerX + i * TILE, centerY - TILE * 1.5, TILE, TILE * 3);
+    }
+
+    // === CENTRAL WELL ===
+    graphics.fillStyle(0x5a5a6a, 1);
+    graphics.fillCircle(centerX, centerY, 18);
+    graphics.fillStyle(0x3498db, 0.8);
+    graphics.fillCircle(centerX, centerY, 10);
+    graphics.lineStyle(3, 0x4a3728);
+    graphics.strokeCircle(centerX, centerY, 18);
+    
+    const well = this.add.rectangle(centerX, centerY, 36, 36, 0x000000, 0);
+    this.physics.add.existing(well, true);
+    this.obstacles.add(well);
+
+    // === SINGLE FORGE (not a grid of them) ===
     this.addStation({
-      x: centerX + stationPositions.forge.x * TILE,
-      y: centerY + stationPositions.forge.y * TILE,
+      x: centerX - TILE * 4,
+      y: centerY - TILE * 3,
       type: 'forge',
       label: 'Village Forge'
     });
+
+    // === TANNER STATION ===
     this.addStation({
-      x: centerX + stationPositions.tanner.x * TILE,
-      y: centerY + stationPositions.tanner.y * TILE,
+      x: centerX + TILE * 4,
+      y: centerY - TILE * 3,
       type: 'tanner',
       label: 'Tanner'
     });
+
+    // === ALCHEMIST STATION ===
     this.addStation({
-      x: centerX + stationPositions.alchemist.x * TILE,
-      y: centerY + stationPositions.alchemist.y * TILE,
+      x: centerX,
+      y: centerY + TILE * 5,
       type: 'alchemist',
       label: 'Alchemist'
     });
 
-    // Create shop buildings and NPCs
-    Object.entries(shops).forEach(([shopId, shop]) => {
-      const pos = villageLayout.shopPositions[shopId];
-      if (!pos) return;
+    // === SHOP BUILDINGS (simplified - 4 shops in corners) ===
+    const shopLayout = [
+      { id: 'weapons', x: -6, y: -6, name: 'Blade & Bow' },
+      { id: 'armor', x: 6, y: -6, name: 'Iron Ward Armory' },
+      { id: 'potions', x: -6, y: 6, name: 'The Bubbling Cauldron' },
+      { id: 'general', x: 6, y: 6, name: 'The Trading Post' },
+    ];
 
-      const shopX = centerX + pos.x * TILE;
-      const shopY = centerY + pos.y * TILE;
-
-      // Create shop building
-      this.createShopBuilding(shopX, shopY, shop);
-
-      // Create shop NPC
-      this.createShopNPC(shopX, shopY + 30, shopId, shop);
+    shopLayout.forEach(layout => {
+      const shop = shops[layout.id];
+      if (!shop) return;
+      const shopX = centerX + layout.x * TILE;
+      const shopY = centerY + layout.y * TILE;
+      
+      this.createShopBuilding(shopX, shopY, { ...shop, name: layout.name });
+      this.createShopNPC(shopX, shopY + 35, layout.id, shop);
     });
 
-    // Add extra NPCs for flavor
-    villageLayout.extraNPCs.forEach((npc) => {
-      const npcX = centerX + npc.x * TILE;
-      const npcY = centerY + npc.y * TILE;
-      this.createNPC(npcX, npcY, npc.role, npc.name, npc.sprite);
+    // === KEY NPCS ===
+    // Elder in the center-north area
+    this.createNPC(centerX, centerY - TILE * 5, 'lore_keeper', 'Elder Thane', 'wizard');
+    // Guard near the forge
+    this.createNPC(centerX + TILE * 2, centerY, 'guard', 'Guard Captain', 'knight');
+
+    // === DECORATIVE TREES (just a few, placed intentionally) ===
+    const villageTrees = [
+      { x: -7, y: -2 }, { x: 7, y: -2 }, // Flanking paths
+      { x: -7, y: 3 }, { x: 7, y: 3 },
+      { x: 0, y: -7 }, // Near elder
+    ];
+    
+    villageTrees.forEach(pos => {
+      const tx = centerX + pos.x * TILE;
+      const ty = centerY + pos.y * TILE;
+      if (this.textures.exists('tree-1-small')) {
+        const tree = this.add.sprite(tx, ty, 'tree-1-small');
+        tree.setScale(0.35);
+        tree.setOrigin(0.5, 0.95);
+        tree.setDepth(ty);
+        this.hideFromMinimap(tree);
+        
+        // Tree collision
+        const treeCol = this.add.rectangle(tx, ty + 5, 16, 16, 0x000000, 0);
+        this.physics.add.existing(treeCol, true);
+        this.obstacles.add(treeCol);
+      }
     });
-
-    // Village decorations
-    const graphics = this.add.graphics();
-    graphics.setDepth(1);
-
-    // Well at center
-    graphics.fillStyle(0x5a5a6a, 1);
-    graphics.fillCircle(centerX, centerY, 20);
-    graphics.fillStyle(0x3498db, 0.7);
-    graphics.fillCircle(centerX, centerY, 12);
-    graphics.lineStyle(3, 0x4a3728);
-    graphics.strokeCircle(centerX, centerY, 20);
-
-    // Add well collision
-    const well = this.add.rectangle(centerX, centerY, 40, 40, 0x000000, 0);
-    this.physics.add.existing(well, true);
-    this.obstacles.add(well);
-
-    // Village paths - cross pattern
-    graphics.fillStyle(0x8b7355, 0.6);
-    // North-South path
-    for (let i = -10; i <= 10; i++) {
-      graphics.fillRect(centerX - TILE, centerY + i * TILE - TILE/2, TILE * 2, TILE);
-    }
-    // East-West path
-    for (let i = -10; i <= 10; i++) {
-      graphics.fillRect(centerX + i * TILE - TILE/2, centerY - TILE, TILE, TILE * 2);
-    }
   }
 
   createShopBuilding(x, y, shop) {
@@ -2696,8 +2683,8 @@ class MainScene extends Phaser.Scene {
 
         const dir = mob.data.get('wanderDir');
         if (dir) {
-          const wanderSpeed = data.speed * 0.3;
-          mob.setVelocity(dir.x * wanderSpeed, dir.y * wanderSpeed);
+        const wanderSpeed = data.speed * 0.3;
+        mob.setVelocity(dir.x * wanderSpeed, dir.y * wanderSpeed);
         } else {
           mob.setVelocity(0, 0);
         }
