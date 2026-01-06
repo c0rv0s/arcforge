@@ -217,26 +217,60 @@
     .log {
       position: absolute;
       bottom: 16px;
-      left: 16px;
-      width: calc(100vw - 32px);
-      max-width: 550px;
-      background: linear-gradient(145deg, rgba(12, 15, 24, 0.9), rgba(8, 10, 16, 0.95));
+      right: 16px;
+      width: 280px;
+      max-height: 120px;
+      background: linear-gradient(145deg, rgba(12, 15, 24, 0.85), rgba(8, 10, 16, 0.9));
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 4px;
-      padding: 12px 16px;
-      font-size: 13px;
-      line-height: 1.5;
+      padding: 8px 12px;
+      font-size: 12px;
+      line-height: 1.4;
       z-index: 50;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
     
-    .log div {
+    .log:hover {
+      border-color: rgba(122, 245, 215, 0.3);
+    }
+    
+    .log.expanded {
+      width: 400px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .log-header {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7af5d7;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .log-header span:last-child {
+      font-size: 9px;
+      color: #666;
+    }
+    
+    .log div.log-entry {
       padding: 2px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      color: #b8b4ac;
     }
     
-    .log div:last-child {
+    .log div.log-entry:last-child {
       border-bottom: none;
+    }
+    
+    .log div.log-entry.fading {
+      opacity: 0.5;
     }
     
     /* Scrollbar styling */
