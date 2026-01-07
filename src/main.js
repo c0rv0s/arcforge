@@ -236,7 +236,7 @@ function updateHUD(taskText = '') {
     <div class="bar"><span style="width:${stamPercent}%;background:linear-gradient(90deg,#ffd66b,#ff7c52)"></span></div>
     <div class="stat-line"><span>Coins</span><span>${playerState.coins}</span></div>
     <div class="stat-line"><span>XP</span><span>${playerState.xp} (Lv ${playerState.level})</span></div>
-    <div class="stat-line keybinds">Move: WASD · Attack: Space · Interact: E · Craft: C · Inventory: I</div>
+    <div class="stat-line keybinds">Move: WASD · Attack: Space · Interact: E · Craft: C · Inventory: I · Map: M</div>
     ${taskText ? `<div style="font-size:12px;color:#8df2c5;">${taskText}</div>` : ''}
   `;
 }
@@ -623,7 +623,7 @@ class MainScene extends Phaser.Scene {
       this.cameras.main.setZoom(1.5);
       this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
       this.cameras.main.setDeadzone(100, 100);
-      this.createMinimap();
+      this.createMapButton();
 
       // Load initial chunks around player
       this.updateChunks(true);
@@ -2197,39 +2197,142 @@ class MainScene extends Phaser.Scene {
     });
   }
   
-  createMinimap() {
-    const minimapSize = 150;
-    const minimapX = this.cameras.main.width - minimapSize - 20;
-    const minimapY = 20;
+  createMapButton() {
+    // Map hint in top-right corner
+    const hintX = this.cameras.main.width - 60;
+    const hintY = 25;
     
-    // Minimap background
-    const minimapBg = this.add.rectangle(minimapX + minimapSize/2, minimapY + minimapSize/2, 
-      minimapSize + 4, minimapSize + 4, 0x0a0c16, 0.9);
-    minimapBg.setScrollFactor(0);
-    minimapBg.setDepth(100);
-    minimapBg.setStrokeStyle(2, 0x7af5d7, 0.8);
+    const mapHintBg = this.add.rectangle(hintX, hintY, 80, 28, 0x0a0c16, 0.85);
+    mapHintBg.setScrollFactor(0);
+    mapHintBg.setDepth(100);
+    mapHintBg.setStrokeStyle(1, 0x7af5d7, 0.6);
+    mapHintBg.setInteractive({ useHandCursor: true });
     
-    // Minimap camera
-    this.minimapCam = this.cameras.add(minimapX, minimapY, minimapSize, minimapSize);
-    this.minimapCam.setZoom(minimapSize / (WORLD_SIZE * TILE));
-    this.minimapCam.startFollow(this.player);
-    this.minimapCam.setBackgroundColor(0x0a0c16);
+    const mapHintLabel = this.add.text(hintX, hintY, '[M] Map', {
+      fontSize: '12px',
+      color: '#7af5d7',
+      fontFamily: 'Cinzel',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
     
-    // Hide UI elements from minimap
-    this.minimapCam.ignore([minimapBg]);
+    mapHintBg.on('pointerdown', () => this.toggleWorldMap());
     
-    // Store reference for ignoring decorations/obstacles later
-    this.minimapIgnoreList = [minimapBg];
+    // Store reference
+    this.mapHint = { bg: mapHintBg, label: mapHintLabel };
+    this.mapOpen = false;
+    this.mapOverlay = null;
   }
   
-  // Add object to minimap ignore list (call for trees, decorations, etc)
-  hideFromMinimap(obj) {
-    if (!obj || !this.minimapCam) return;
-    try {
-      this.minimapCam.ignore(obj);
-    } catch (e) {
-      // Silently fail if object can't be ignored
+  toggleWorldMap() {
+    if (this.mapOpen) {
+      this.closeWorldMap();
+    } else {
+      this.openWorldMap();
     }
+  }
+  
+  openWorldMap() {
+    if (this.mapOpen) return;
+    this.mapOpen = true;
+    
+    const camWidth = this.cameras.main.width;
+    const camHeight = this.cameras.main.height;
+    const mapSize = Math.min(camWidth, camHeight) - 100;
+    const centerX = camWidth / 2;
+    const centerY = camHeight / 2;
+    
+    // Full screen dark overlay - completely opaque to hide game world
+    const overlay = this.add.rectangle(centerX, centerY, camWidth * 3, camHeight * 3, 0x0a0a12, 1);
+    overlay.setScrollFactor(0).setDepth(5000);
+    overlay.setInteractive();
+    overlay.on('pointerdown', () => this.closeWorldMap());
+    
+    // Map container background
+    const mapBg = this.add.rectangle(centerX, centerY, mapSize + 16, mapSize + 16, 0x1a1a2e, 1);
+    mapBg.setScrollFactor(0).setDepth(5001);
+    mapBg.setStrokeStyle(3, 0x7af5d7, 1);
+    
+    // Map title
+    const title = this.add.text(centerX, centerY - mapSize/2 - 25, 'WORLD MAP', {
+      fontSize: '20px',
+      color: '#ffd66b',
+      fontFamily: 'Cinzel',
+      fontStyle: 'bold',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(5003);
+    
+    // Create a render texture for the map itself
+    const mapStartX = centerX - mapSize/2;
+    const mapStartY = centerY - mapSize/2;
+    
+    // Draw the actual map (simplified terrain view)
+    const mapGraphics = this.add.graphics();
+    mapGraphics.setScrollFactor(0).setDepth(5002);
+    
+    const tileSize = mapSize / WORLD_SIZE;
+    
+    // Draw terrain colors
+    for (let y = 0; y < WORLD_SIZE; y += 2) {
+      for (let x = 0; x < WORLD_SIZE; x += 2) {
+        const biome = this.terrainData[y]?.[x]?.biome || 'meadow';
+        const colors = {
+          village: 0xc4a574,
+          meadow: 0x5a8c4a,
+          forest: 0x2d5a2d,
+          desert: 0xc4a060,
+          cemetery: 0x4a4a5a,
+          cave: 0x3a3a4a,
+          forge: 0x5a3a2a,
+          sewer: 0x4a5a4a,
+          water: 0x3498db,
+        };
+        mapGraphics.fillStyle(colors[biome] || 0x5a8c4a, 1);
+        mapGraphics.fillRect(mapStartX + x * tileSize, mapStartY + y * tileSize, tileSize * 2 + 1, tileSize * 2 + 1);
+      }
+    }
+    
+    // Player marker (red dot with white outline)
+    const playerMapX = mapStartX + (this.player.x / TILE) * tileSize;
+    const playerMapY = mapStartY + (this.player.y / TILE) * tileSize;
+    mapGraphics.lineStyle(3, 0xffffff, 1);
+    mapGraphics.strokeCircle(playerMapX, playerMapY, 8);
+    mapGraphics.fillStyle(0xff3333, 1);
+    mapGraphics.fillCircle(playerMapX, playerMapY, 6);
+    
+    // Village marker (gold square)
+    const villageMapX = mapStartX + VILLAGE_CENTER.x * tileSize;
+    const villageMapY = mapStartY + VILLAGE_CENTER.y * tileSize;
+    mapGraphics.lineStyle(2, 0xffffff, 1);
+    mapGraphics.strokeRect(villageMapX - 5, villageMapY - 5, 10, 10);
+    mapGraphics.fillStyle(0xffd66b, 1);
+    mapGraphics.fillRect(villageMapX - 4, villageMapY - 4, 8, 8);
+    
+    // Legend
+    const legendY = centerY + mapSize/2 + 20;
+    const legendText = this.add.text(centerX, legendY, '● You    ■ Village    Click or [M] to close', {
+      fontSize: '12px',
+      color: '#aaaaaa',
+      fontFamily: 'Crimson Text',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(5003);
+    
+    // Store references for cleanup
+    this.mapOverlay = { overlay, mapBg, title, mapGraphics, legendText };
+  }
+  
+  closeWorldMap() {
+    if (!this.mapOpen || !this.mapOverlay) return;
+    this.mapOpen = false;
+    
+    // Destroy all map elements
+    this.mapOverlay.overlay.destroy();
+    this.mapOverlay.mapBg.destroy();
+    this.mapOverlay.title.destroy();
+    this.mapOverlay.mapGraphics.destroy();
+    this.mapOverlay.legendText.destroy();
+    this.mapOverlay = null;
+  }
+  
+  // No-op now that minimap is removed - keep for compatibility
+  hideFromMinimap(obj) {
+    // No longer needed - world map renders on demand
   }
   
   createParticleSystems() {
@@ -2248,10 +2351,12 @@ class MainScene extends Phaser.Scene {
       I: Phaser.Input.Keyboard.KeyCodes.I,
       P: Phaser.Input.Keyboard.KeyCodes.P,
       H: Phaser.Input.Keyboard.KeyCodes.H,
+      M: Phaser.Input.Keyboard.KeyCodes.M,
       SPACE: Phaser.Input.Keyboard.KeyCodes.SPACE,
     });
     
     this.keys.I.on('down', () => renderInventoryPanel());
+    this.keys.M.on('down', () => this.toggleWorldMap());
     this.keys.C.on('down', () => this.tryCraft());
     this.keys.E.on('down', () => this.tryInteract());
     this.keys.P.on('down', () => this.tryPlaceOnPlot());
