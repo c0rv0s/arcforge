@@ -41,6 +41,20 @@ const GROUND_SHEETS = {
   water: { key: 'tiles-water', scale: 2 },
 };
 
+const GROUND_FRAMES = {
+  village: 0,
+  meadow: 1,
+  road: 2,
+  forest: 3,
+  desert: 4,
+  cemetery: 5,
+  sewer: 6,
+  cave: 7,
+  forge: 8,
+  castle: 9,
+  water: 0,
+};
+
 // Chunk-based loading system for performance
 const CHUNK_SIZE = 12; // smaller chunks for better performance
 const RENDER_DISTANCE = 2; // chunks to load in each direction
@@ -909,8 +923,9 @@ class MainScene extends Phaser.Scene {
     const sheet = GROUND_SHEETS[biome] || GROUND_SHEETS.meadow;
     if (sheet && this.textures.exists(sheet.key)) {
       const tex = this.textures.get(sheet.key);
+      const baseFrame = GROUND_FRAMES[biome] ?? 0;
       const totalFrames = Math.max(1, tex.frameTotal - 1);
-      const frameIdx = Math.floor(Math.abs(noiseVal) * totalFrames) % totalFrames;
+      const frameIdx = Math.min(totalFrames - 1, baseFrame);
       const sprite = this.add.image(px + TILE / 2, py + TILE / 2, sheet.key, frameIdx);
       const scale = sheet.scale || 2;
       sprite.setDisplaySize(TILE, TILE);
@@ -2315,13 +2330,13 @@ class MainScene extends Phaser.Scene {
     
     // Full screen dark overlay - completely opaque to hide game world
     const overlay = this.add.rectangle(centerX, centerY, camWidth * 3, camHeight * 3, 0x0a0a12, 1);
-    overlay.setScrollFactor(0).setDepth(5000);
+    overlay.setScrollFactor(0).setDepth(20000);
     overlay.setInteractive();
     overlay.on('pointerdown', () => this.closeWorldMap());
     
     // Map container background
     const mapBg = this.add.rectangle(centerX, centerY, mapSize + 16, mapSize + 16, 0x1a1a2e, 1);
-    mapBg.setScrollFactor(0).setDepth(5001);
+    mapBg.setScrollFactor(0).setDepth(20010);
     mapBg.setStrokeStyle(3, 0x7af5d7, 1);
     
     // Map title
@@ -2330,7 +2345,7 @@ class MainScene extends Phaser.Scene {
       color: '#ffd66b',
       fontFamily: 'Cinzel',
       fontStyle: 'bold',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(5003);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(20020);
     
     // Create a render texture for the map itself
     const mapStartX = centerX - mapSize/2;
@@ -2338,7 +2353,7 @@ class MainScene extends Phaser.Scene {
     
     // Draw the actual map (simplified terrain view)
     const mapGraphics = this.add.graphics();
-    mapGraphics.setScrollFactor(0).setDepth(5002);
+    mapGraphics.setScrollFactor(0).setDepth(20015);
     
     const tileSize = mapSize / WORLD_SIZE;
     
@@ -2384,7 +2399,7 @@ class MainScene extends Phaser.Scene {
       fontSize: '12px',
       color: '#aaaaaa',
       fontFamily: 'Crimson Text',
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(5003);
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(20020);
     
     // Store references for cleanup
     this.mapOverlay = { overlay, mapBg, title, mapGraphics, legendText };
@@ -2994,12 +3009,16 @@ class MainScene extends Phaser.Scene {
 
   checkPortals() {
     const p = this.player;
+    if (!p) return false;
     for (const key of Object.keys(PORTALS)) {
       const portal = PORTALS[key];
       const dist = Phaser.Math.Distance.Between(p.x / TILE, p.y / TILE, portal.x, portal.y);
       if (dist < portal.radius) {
+        if (this.portalCooldown && this.time.now < this.portalCooldown) return true;
+        this.portalCooldown = this.time.now + 1000;
         this.scene.pause();
         this.scene.launch(portal.scene, { returnScene: 'main', returnPosition: { x: p.x, y: p.y } });
+        this.scene.bringToTop(portal.scene);
         logEvent(`Entering ${key}...`);
         return true;
       }
@@ -3372,16 +3391,15 @@ class InteriorScene extends Phaser.Scene {
     // Some props for flavor
     this.addInteriorProps(width, height);
 
-    // Player
-    this.player = this.physics.add.sprite(width / 2, height - TILE * 2, 'player-run-down');
+    // Player (spawn a few tiles away from exit zone)
+    this.player = this.physics.add.sprite(width / 2, height - TILE * 6, 'player-run-down');
     this.player.setScale(PLAYER_SCALE);
     this.player.setSize(20, 24).setOffset(22, 28);
     this.player.direction = 'up';
 
-    // Exit zone near entrance
-    this.exitZone = this.add.rectangle(width / 2, height - TILE, TILE * 2, TILE * 2, 0x00ff00, 0.2);
+    // Exit zone near entrance (press E to exit)
+    this.exitZone = this.add.rectangle(width / 2, height - TILE * 1.5, TILE * 2, TILE * 2, 0x00ff00, 0.2);
     this.physics.add.existing(this.exitZone, true);
-    this.physics.add.overlap(this.player, this.exitZone, () => this.exitInterior());
 
     this.cameras.main.setBounds(0, 0, width, height);
     this.physics.world.setBounds(0, 0, width, height);
