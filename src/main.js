@@ -18,65 +18,103 @@ if (window.location.protocol === 'file:') {
 }
 
 // Tile and world configuration
-const TILE = 32; // Display tile size
+const TILE = 32; // Display tile size (sprites are 16x16 and scaled 2x)
 const WORLD_SIZE = 256; // tiles per side (can be much larger with chunks)
 const VILLAGE_CENTER = { x: 128, y: 128 }; // Center of world
-const VILLAGE_RADIUS = 20; // Safe zone radius in tiles
+const VILLAGE_RADIUS = 18; // Safe zone radius in tiles
 const PLAYER_SCALE = 1.0;
 const MOB_SCALE = 1.0;
 const LOG_LIMIT = 6;
+
+// Ground tilesheet mapping by biome
+const GROUND_SHEETS = {
+  village: { key: 'tileset-floors', scale: 2 },
+  meadow: { key: 'tileset-floors', scale: 2 },
+  road: { key: 'tileset-floors', scale: 2 },
+  forest: { key: 'tiles-forest', scale: 2 },
+  desert: { key: 'tiles-desert-ground', scale: 2 },
+  cemetery: { key: 'tiles-cemetery', scale: 2 },
+  sewer: { key: 'tiles-sewer', scale: 2 },
+  cave: { key: 'tiles-cave', scale: 2 },
+  forge: { key: 'tiles-forge', scale: 2 },
+  castle: { key: 'tiles-castle', scale: 2 },
+  water: { key: 'tiles-water', scale: 2 },
+};
 
 // Chunk-based loading system for performance
 const CHUNK_SIZE = 12; // smaller chunks for better performance
 const RENDER_DISTANCE = 2; // chunks to load in each direction
 const MOBS_PER_CHUNK = 1; // max mobs spawned per chunk
 
-// Directional biome determination based on angle from village center
-function getDirectionalBiome(tileX, tileY) {
+// Hand-authored layout with clear zones and landmarks
+const OVERWORLD_LAYOUT = {
+  desert: { x1: 12, y1: 90, x2: 116, y2: 210 },
+  southForest: { x1: 80, y1: 170, x2: 210, y2: 250 },
+  northForest: { x1: 80, y1: 20, x2: 200, y2: 90 },
+  cemetery: { x1: 120, y1: 30, x2: 170, y2: 70 },
+  hideout: { x1: 130, y1: 6, x2: 170, y2: 24 },
+  eastForest: { x1: 190, y1: 90, x2: 250, y2: 180 },
+  castle: { x1: 205, y1: 110, x2: 240, y2: 150 },
+};
+
+const PATHS = [
+  { from: VILLAGE_CENTER, to: { x: 60, y: 150 } }, // west / desert
+  { from: VILLAGE_CENTER, to: { x: 130, y: 200 } }, // south forest / cave
+  { from: VILLAGE_CENTER, to: { x: 130, y: 50 } }, // north forest / cemetery
+  { from: { x: 130, y: 50 }, to: { x: 150, y: 18 } }, // up to hideout
+  { from: VILLAGE_CENTER, to: { x: 215, y: 130 } }, // east forest / castle
+];
+
+const PORTALS = {
+  cave: { x: 140, y: 210, radius: 4, scene: 'cave' },
+  castle: { x: 220, y: 130, radius: 4, scene: 'castle' },
+  hideout: { x: 150, y: 14, radius: 3, scene: 'hideout' },
+};
+
+function tileInRect(x, y, rect) {
+  return x >= rect.x1 && x <= rect.x2 && y >= rect.y1 && y <= rect.y2;
+}
+
+function tileOnPath(x, y) {
+  // Simple point-to-point walkway lines with thickness
+  for (const path of PATHS) {
+    const dx = path.to.x - path.from.x;
+    const dy = path.to.y - path.from.y;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) continue;
+    const t = ((x - path.from.x) * dx + (y - path.from.y) * dy) / lenSq;
+    if (t < -0.05 || t > 1.05) continue;
+    const projX = path.from.x + t * dx;
+    const projY = path.from.y + t * dy;
+    const dist = Math.hypot(x - projX, y - projY);
+    if (dist < 2.2) return true;
+  }
+  return false;
+}
+
+function getBiomeAt(tileX, tileY) {
   const dx = tileX - VILLAGE_CENTER.x;
   const dy = tileY - VILLAGE_CENTER.y;
   const distFromCenter = Math.hypot(dx, dy);
 
-  // Village safe zone
+  // Village core and outskirts
   if (distFromCenter < VILLAGE_RADIUS) return 'village';
-  if (distFromCenter < VILLAGE_RADIUS + 5) return 'meadow'; // Village outskirts
+  if (distFromCenter < VILLAGE_RADIUS + 4) return tileOnPath(tileX, tileY) ? 'road' : 'meadow';
 
-  // Calculate angle (0 = East, PI/2 = South, PI = West, -PI/2 = North)
-  const angle = Math.atan2(dy, dx);
-  // Normalize to 0-1 range where 0 = East going clockwise
-  const normalizedAngle = ((angle + Math.PI) / (2 * Math.PI) + 0.25) % 1;
+  // Landmark regions
+  if (tileOnPath(tileX, tileY)) return 'road';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.cemetery)) return 'cemetery';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.castle)) return 'castle';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.hideout)) return 'forest';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.desert)) return 'desert';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.southForest)) return 'forest';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.northForest)) return 'forest';
+  if (tileInRect(tileX, tileY, OVERWORLD_LAYOUT.eastForest)) return 'forest';
 
-  // Corner detection for cave/forge biomes (corners of the map)
-  const cornerDist = Math.min(
-    Math.hypot(tileX, tileY),
-    Math.hypot(tileX - WORLD_SIZE, tileY),
-    Math.hypot(tileX, tileY - WORLD_SIZE),
-    Math.hypot(tileX - WORLD_SIZE, tileY - WORLD_SIZE)
-  );
-  if (cornerDist < 50) {
-    // NW and SE corners are caves, NE and SW are forge
-    if ((tileX < WORLD_SIZE / 2 && tileY < WORLD_SIZE / 2) ||
-        (tileX > WORLD_SIZE / 2 && tileY > WORLD_SIZE / 2)) {
-      return 'cave';
-    }
-    return 'forge';
-  }
+  // Edge water to frame the world lightly
+  if (tileX < 6 || tileY < 6 || tileX > WORLD_SIZE - 6 || tileY > WORLD_SIZE - 6) return 'water';
 
-  // Cardinal directions (with some blending at edges)
-  // North: Forest (Elves) - angles around 0 (top)
-  // East: Desert (Mummies) - angles around 0.25
-  // South: Cemetery (Zombies) - angles around 0.5
-  // West: Sewer (Rats) - angles around 0.75
-
-  if (normalizedAngle < 0.125 || normalizedAngle >= 0.875) {
-    return 'forest'; // North
-  } else if (normalizedAngle < 0.375) {
-    return 'desert'; // East
-  } else if (normalizedAngle < 0.625) {
-    return 'cemetery'; // South
-  } else {
-    return 'sewer'; // West
-  }
+  return 'meadow';
 }
 
 // Noise function for procedural terrain
@@ -349,8 +387,20 @@ class BootScene extends Phaser.Scene {
     this.load.image('station-anvil', `${envBase}/Structures/Stations/Anvil/Anvil.png`);
     this.load.image('station-workbench', `${envBase}/Structures/Stations/Workbench/Workbench.png`);
 
-    // Floor tilesets - 96x96 pixel tiles
-    this.load.spritesheet('tileset-floors', `${envBase}/Tilesets/Floors_Tiles.png`, { frameWidth: 96, frameHeight: 96 });
+    // Floor tilesets - 16x16 pixel tiles (we scale to 32 in-game)
+    this.load.spritesheet('tileset-floors', `${envBase}/Tilesets/Floors_Tiles.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tileset-walls', `${envBase}/Tilesets/Wall_Tiles.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-water', `${envBase}/Tilesets/Water_tiles.png`, { frameWidth: 16, frameHeight: 16 });
+
+    // Biome ground tiles
+    this.load.spritesheet('tiles-forest', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-desert-ground', 'assets/Pixel Crawler - Desert/Assets/Ground.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-desert-sand', 'assets/Pixel Crawler - Desert/Assets/Sand.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/TileSets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-sewer', 'assets/Pixel Crawler - Sewer/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-cave', 'assets/Pixel Crawler - Cave/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-forge', 'assets/Pixel Crawler - Forge/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('tiles-castle', 'assets/Pixel Crawler - Castle Environment 0.3/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
     
     // Trees - ALL models and sizes for maximum variety
     this.load.image('tree-1-small', `${envBase}/Props/Static/Trees/Model_01/Size_02.png`);
@@ -369,13 +419,13 @@ class BootScene extends Phaser.Scene {
     this.load.image('vegetation-full', `${envBase}/Props/Static/Vegetation.png`);
     this.load.image('rocks-full', `${envBase}/Props/Static/Rocks.png`);
     
-    // Biome-specific full prop images
-    this.load.image('props-forest-full', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Props.png');
-    this.load.image('props-desert-full', 'assets/Pixel Crawler - Desert/Assets/Props.png');
-    this.load.image('props-cave-full', 'assets/Pixel Crawler - Cave/Assets/Props.png');
-    this.load.image('props-sewer-full', 'assets/Pixel Crawler - Sewer/Assets/Props.png');
-    this.load.image('props-cemetery-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Props.png');
-    this.load.image('props-graves-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Graves.png');
+    // Biome-specific prop sheets (16x16 tiles, we scale up)
+    this.load.spritesheet('props-forest-full', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-desert-full', 'assets/Pixel Crawler - Desert/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-cave-full', 'assets/Pixel Crawler - Cave/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-sewer-full', 'assets/Pixel Crawler - Sewer/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-cemetery-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Props.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('props-graves-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Graves.png', { frameWidth: 16, frameHeight: 16 });
     
     // Shadows for props
     this.load.image('shadows', `${envBase}/Props/Static/Shadows.png`);
@@ -637,6 +687,13 @@ class MainScene extends Phaser.Scene {
       this.createDungeonEntrances();
       this.initInput();
       this.createParticleSystems();
+      this.events.on('resume', (_scene, data) => {
+        if (data?.returnPosition) {
+          this.player.setPosition(data.returnPosition.x, data.returnPosition.y);
+          this.physics.world.resume();
+          this.updateChunks(true);
+        }
+      });
 
       updateHUD('Explore the world, seek the village forge.');
       initLogToggle();
@@ -746,13 +803,7 @@ class MainScene extends Phaser.Scene {
 
         if (worldTileX >= WORLD_SIZE || worldTileY >= WORLD_SIZE) continue;
 
-        let biome = getDirectionalBiome(worldTileX, worldTileY);
-
-        // Water features (reduced for cleaner biomes)
-        const waterNoise = perlinNoise(worldTileX, worldTileY, 2, 0.5, this.worldSeed + 3000);
-        if (waterNoise < 0.08 && biome !== 'village' && biome !== 'desert' && biome !== 'forge') {
-          biome = 'water';
-        }
+        let biome = getBiomeAt(worldTileX, worldTileY);
 
         const px = worldTileX * TILE;
         const py = worldTileY * TILE;
@@ -763,6 +814,16 @@ class MainScene extends Phaser.Scene {
 
         // Draw rich textured ground
         this.drawRichGround(graphics, px, py, worldTileX, worldTileY, biome, chunkData);
+
+        // Portal markers (visible cues)
+        Object.values(PORTALS).forEach((portal) => {
+          if (Math.abs(worldTileX - portal.x) < 1 && Math.abs(worldTileY - portal.y) < 1) {
+            const marker = this.add.circle(px + TILE / 2, py + TILE / 2, TILE * 0.6, 0x5de6c2, 0.25);
+            marker.setStrokeStyle(2, 0x9af5ff, 0.7);
+            marker.setDepth(1);
+            chunkData.decorations.push(marker);
+          }
+        });
 
         // Water collision
         if (biome === 'water') {
@@ -814,6 +875,8 @@ class MainScene extends Phaser.Scene {
       for (let i = 0; i < MOBS_PER_CHUNK; i++) {
         const mobX = (startX + Math.random() * CHUNK_SIZE) * TILE;
         const mobY = (startY + Math.random() * CHUNK_SIZE) * TILE;
+        const tileBiome = this.terrainData[Math.floor(mobY / TILE)]?.[Math.floor(mobX / TILE)]?.biome;
+        if (tileBiome === 'village' || tileBiome === 'road' || tileBiome === 'castle') continue;
         const mob = this.spawnMobAt(mobX, mobY);
         if (mob) chunkData.mobs.push(mob);
       }
@@ -832,7 +895,7 @@ class MainScene extends Phaser.Scene {
     
     // Base color with perlin noise variation for organic look
     const noiseVal = perlinNoise(tileX, tileY, 3, 0.6, this.worldSeed + 100);
-    const variation = (noiseVal - 0.5) * 0.25;
+    const variation = (noiseVal - 0.5) * 0.15;
     
     const baseColor = Phaser.Display.Color.IntegerToColor(colors.ground);
     const r = Math.max(0, Math.min(255, Math.floor(baseColor.red * (1 + variation))));
@@ -842,22 +905,35 @@ class MainScene extends Phaser.Scene {
     graphics.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
     graphics.fillRect(px, py, TILE, TILE);
 
+    // Overlay an actual ground tile frame from the biome sheet
+    const sheet = GROUND_SHEETS[biome] || GROUND_SHEETS.meadow;
+    if (sheet && this.textures.exists(sheet.key)) {
+      const tex = this.textures.get(sheet.key);
+      const totalFrames = Math.max(1, tex.frameTotal - 1);
+      const frameIdx = Math.floor(Math.abs(noiseVal) * totalFrames) % totalFrames;
+      const sprite = this.add.image(px + TILE / 2, py + TILE / 2, sheet.key, frameIdx);
+      const scale = sheet.scale || 2;
+      sprite.setDisplaySize(TILE, TILE);
+      sprite.setDepth(0.05);
+      chunkData.tiles.push(sprite);
+    }
+
     // Add subtle texture pattern based on biome
     const patternRand = seededRandom(tileX * 500 + tileY + this.worldSeed);
     
     if (biome === 'forest' || biome === 'meadow') {
       // Grass texture - small darker patches
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 2; i++) {
         const ox = (seededRandom(tileX * 100 + tileY * 10 + i + this.worldSeed) * TILE) | 0;
         const oy = (seededRandom(tileX * 10 + tileY * 100 + i + this.worldSeed) * TILE) | 0;
         const size = 3 + patternRand * 4;
-        graphics.fillStyle(colors.accent || colors.ground, 0.3);
+        graphics.fillStyle(colors.accent || colors.ground, 0.25);
         graphics.fillEllipse(px + ox, py + oy, size, size * 0.6);
       }
     } else if (biome === 'desert') {
       // Sand ripples
       if (patternRand < 0.3) {
-        graphics.lineStyle(1, 0xc4913a, 0.2);
+        graphics.lineStyle(1, 0xc4913a, 0.15);
         const rippleY = py + patternRand * TILE;
         graphics.lineBetween(px, rippleY, px + TILE, rippleY + 2);
       }
@@ -869,14 +945,6 @@ class MainScene extends Phaser.Scene {
         graphics.fillStyle(0x3a3a4a, 0.25);
         graphics.fillEllipse(px + ox, py + oy, 4, 3);
       }
-    } else if (biome === 'water') {
-      // Water with wave effect
-      graphics.fillStyle(0x3498db, 0.9);
-      graphics.fillRect(px, py, TILE, TILE);
-      // Ripple highlights
-      const waveOffset = (tileX + tileY) * 0.5;
-      graphics.fillStyle(0x5dade2, 0.3);
-      graphics.fillEllipse(px + TILE/2 + Math.sin(waveOffset) * 8, py + TILE/2, 8, 4);
     }
   }
 
@@ -1003,6 +1071,7 @@ class MainScene extends Phaser.Scene {
   
   // Use perlin noise for organic tree clustering
   shouldSpawnTree(tileX, tileY, biome) {
+    if (biome === 'village' || biome === 'road' || biome === 'castle') return false;
     // Very sparse for performance
     const baseDensity = {
       forest: 0.015,
@@ -1024,6 +1093,7 @@ class MainScene extends Phaser.Scene {
 
   // Mid-level biome-specific props (bushes, plants, rocks)
   addBiomeProp(px, py, tileX, tileY, biome, chunkData) {
+    if (biome === 'road' || biome === 'village' || biome === 'castle') return;
     const seed = tileX * 5000 + tileY + this.worldSeed;
     const rand = seededRandom(seed);
     const rand2 = seededRandom(seed + 100);
@@ -1307,7 +1377,7 @@ class MainScene extends Phaser.Scene {
     // Get biome at position
     const tileX = Math.floor(x / TILE);
     const tileY = Math.floor(y / TILE);
-    const biome = getDirectionalBiome(tileX, tileY);
+    const biome = getBiomeAt(tileX, tileY);
 
     // Get valid mob types for this biome - biomeSpawns has {type, weight} objects
     const spawnTable = biomeSpawns[biome] || biomeSpawns.meadow;
@@ -1464,36 +1534,39 @@ class MainScene extends Phaser.Scene {
         visual.setDepth(actualY);
       }
     } else if (biome === 'desert') {
-      // Desert - large rocks and dead trees
-      if (rand < 0.7) {
-        const rockSize = 18 + rand * 15;
-        shadow = this.add.ellipse(actualX, actualY + rockSize * 0.15, rockSize * 0.9, rockSize * 0.3, 0x000000, 0.2);
+      // Desert - use props sheet for cacti/bones/ruins
+      if (this.textures.exists('props-desert-full')) {
+        const tex = this.textures.get('props-desert-full');
+        const totalFrames = Math.max(1, tex.frameTotal - 1);
+        // Bias to earlier frames which tend to be small props
+        const frameIdx = Math.floor(rand * Math.min(totalFrames, 80));
+        shadow = this.add.ellipse(actualX, actualY + 6, 18, 8, 0x000000, 0.18);
         shadow.setDepth(actualY - 1);
-        // Main rock body
-        visual = this.add.ellipse(actualX, actualY - rockSize * 0.2, rockSize, rockSize * 0.65, 0xb8956a, 1);
+        visual = this.add.sprite(actualX, actualY, 'props-desert-full', frameIdx);
+        visual.setOrigin(0.5, 0.8);
+        visual.setScale(2);
         visual.setDepth(actualY);
-        // Rock highlight
-        const highlight = this.add.ellipse(actualX - rockSize * 0.2, actualY - rockSize * 0.35, rockSize * 0.35, rockSize * 0.2, 0xc8a57a, 0.6);
-        highlight.setDepth(actualY + 0.1);
-        extras.push(highlight);
       } else {
-        // Dead tree / cactus large
+        // Fallback simple cactus
         const height = 25 + rand * 15;
         shadow = this.add.ellipse(actualX, actualY + 3, 12, 5, 0x000000, 0.15);
         shadow.setDepth(actualY - 1);
         visual = this.add.rectangle(actualX, actualY - height/2, 8, height, 0x2d8659, 1);
         visual.setDepth(actualY);
-        // Side arms
-        const arm1 = this.add.rectangle(actualX - 10, actualY - height * 0.5, 12, 6, 0x2d8659, 1);
-        arm1.setDepth(actualY);
-        extras.push(arm1);
-        const arm2 = this.add.rectangle(actualX + 10, actualY - height * 0.3, 12, 6, 0x2d8659, 1);
-        arm2.setDepth(actualY);
-        extras.push(arm2);
       }
     } else if (biome === 'cemetery') {
-      // Cemetery - dead trees and large monuments
-      if (rand < 0.3 && this.textures.exists('tree-cemetery')) {
+      // Cemetery - graves, monuments, sparse dead trees
+      if (this.textures.exists('props-graves-full') && rand < 0.55) {
+        const tex = this.textures.get('props-graves-full');
+        const totalFrames = Math.max(1, tex.frameTotal - 1);
+        const frameIdx = Math.floor(rand * Math.min(totalFrames, 50));
+        shadow = this.add.ellipse(actualX, actualY + 4, 14, 6, 0x000000, 0.2);
+        shadow.setDepth(actualY - 1);
+        visual = this.add.sprite(actualX, actualY, 'props-graves-full', frameIdx);
+        visual.setOrigin(0.5, 0.9);
+        visual.setScale(2);
+        visual.setDepth(actualY);
+      } else if (rand < 0.75 && this.textures.exists('tree-cemetery')) {
         const scale = 0.3 + rand2 * 0.15;
         shadow = this.add.ellipse(actualX, actualY + 10, 30 * scale, 12 * scale, 0x000000, 0.25);
         shadow.setDepth(actualY - 1);
@@ -1502,7 +1575,7 @@ class MainScene extends Phaser.Scene {
         visual.setOrigin(0.5, 0.95);
         visual.setDepth(actualY);
         visual.setFlipX(rand3 > 0.5);
-      } else if (rand < 0.6) {
+      } else if (rand < 0.9) {
         // Large gravestone monument
         const height = 24 + rand * 12;
         shadow = this.add.ellipse(actualX, actualY + 3, 14, 5, 0x000000, 0.2);
@@ -2025,7 +2098,7 @@ class MainScene extends Phaser.Scene {
       if (centerDist < VILLAGE_RADIUS + 5) continue;
 
       // Get biome at this location
-      const tileBiome = getDirectionalBiome(x, y);
+      const tileBiome = getBiomeAt(x, y);
       if (tileBiome === 'water' || tileBiome === 'village') continue;
 
       // Get spawn table for this biome, default to meadow
@@ -2900,6 +2973,9 @@ class MainScene extends Phaser.Scene {
   }
 
   tryInteract() {
+    // Portals to interiors (cave, castle, hideout)
+    if (this.checkPortals()) return;
+
     // Check for dungeon interaction first
     if (this.checkDungeonInteraction(true)) return;
     
@@ -2914,6 +2990,21 @@ class MainScene extends Phaser.Scene {
     
     // Default to crafting
     this.tryCraft();
+  }
+
+  checkPortals() {
+    const p = this.player;
+    for (const key of Object.keys(PORTALS)) {
+      const portal = PORTALS[key];
+      const dist = Phaser.Math.Distance.Between(p.x / TILE, p.y / TILE, portal.x, portal.y);
+      if (dist < portal.radius) {
+        this.scene.pause();
+        this.scene.launch(portal.scene, { returnScene: 'main', returnPosition: { x: p.x, y: p.y } });
+        logEvent(`Entering ${key}...`);
+        return true;
+      }
+    }
+    return false;
   }
   
   handleNPCInteraction() {
@@ -3252,6 +3343,130 @@ class MainScene extends Phaser.Scene {
   }
 }
 
+// Simple interior base for contained dungeons/hideouts
+class InteriorScene extends Phaser.Scene {
+  constructor(key, sheetKey, biome = 'cave') {
+    super({ key });
+    this.sheetKey = sheetKey;
+    this.biome = biome;
+  }
+
+  create(data) {
+    this.returnScene = data?.returnScene || 'main';
+    this.returnPosition = data?.returnPosition;
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.keys = this.input.keyboard.addKeys({
+      W: Phaser.Input.Keyboard.KeyCodes.W,
+      A: Phaser.Input.Keyboard.KeyCodes.A,
+      S: Phaser.Input.Keyboard.KeyCodes.S,
+      D: Phaser.Input.Keyboard.KeyCodes.D,
+      E: Phaser.Input.Keyboard.KeyCodes.E,
+    });
+
+    // Background tiling
+    const width = 40 * TILE;
+    const height = 30 * TILE;
+    const tileSprite = this.add.tileSprite(width / 2, height / 2, width, height, this.sheetKey, 0);
+    tileSprite.setDisplaySize(width, height);
+
+    // Some props for flavor
+    this.addInteriorProps(width, height);
+
+    // Player
+    this.player = this.physics.add.sprite(width / 2, height - TILE * 2, 'player-run-down');
+    this.player.setScale(PLAYER_SCALE);
+    this.player.setSize(20, 24).setOffset(22, 28);
+    this.player.direction = 'up';
+
+    // Exit zone near entrance
+    this.exitZone = this.add.rectangle(width / 2, height - TILE, TILE * 2, TILE * 2, 0x00ff00, 0.2);
+    this.physics.add.existing(this.exitZone, true);
+    this.physics.add.overlap(this.player, this.exitZone, () => this.exitInterior());
+
+    this.cameras.main.setBounds(0, 0, width, height);
+    this.physics.world.setBounds(0, 0, width, height);
+    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+  }
+
+  addInteriorProps(width, height) {
+    const props = [
+      { key: 'props-cave-full', count: 8, area: { x1: 4, y1: 4, x2: width / TILE - 4, y2: height / TILE - 8 }, scale: 2 },
+      { key: 'props-forest-full', count: 4, area: { x1: 6, y1: 6, x2: width / TILE - 6, y2: height / TILE - 10 }, scale: 2 },
+    ];
+    props.forEach((p) => {
+      if (!this.textures.exists(p.key)) return;
+      const tex = this.textures.get(p.key);
+      const totalFrames = Math.max(1, tex.frameTotal - 1);
+      for (let i = 0; i < p.count; i++) {
+        const x = Phaser.Math.Between(p.area.x1, p.area.x2) * TILE;
+        const y = Phaser.Math.Between(p.area.y1, p.area.y2) * TILE;
+        const frame = Phaser.Math.Between(0, totalFrames - 1);
+        const sprite = this.add.sprite(x, y, p.key, frame);
+        sprite.setScale(p.scale || 2);
+        sprite.setOrigin(0.5, 0.8);
+        sprite.setDepth(y);
+      }
+    });
+  }
+
+  update() {
+    if (!this.player) return;
+    const speed = 110;
+    const velocity = new Phaser.Math.Vector2(0, 0);
+    if (this.cursors.left.isDown || this.keys.A.isDown) {
+      velocity.x = -1;
+      this.player.direction = 'left';
+    } else if (this.cursors.right.isDown || this.keys.D.isDown) {
+      velocity.x = 1;
+      this.player.direction = 'right';
+    }
+    if (this.cursors.up.isDown || this.keys.W.isDown) {
+      velocity.y = -1;
+      this.player.direction = 'up';
+    } else if (this.cursors.down.isDown || this.keys.S.isDown) {
+      velocity.y = 1;
+      this.player.direction = 'down';
+    }
+    velocity.normalize().scale(speed);
+    this.player.setVelocity(velocity.x, velocity.y);
+    if (velocity.lengthSq() > 0) {
+      const anim = this.player.direction === 'up' ? 'player-run-up' : this.player.direction === 'down' ? 'player-run-down' : 'player-run-side';
+      this.player.play(anim, true);
+      this.player.setFlipX(this.player.direction === 'left');
+    } else {
+      this.player.stop();
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.keys.E)) {
+      const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, this.exitZone.x, this.exitZone.y);
+      if (dist < TILE * 2.5) this.exitInterior();
+    }
+  }
+
+  exitInterior() {
+    this.scene.stop();
+    this.scene.resume(this.returnScene, { returnPosition: this.returnPosition || { x: VILLAGE_CENTER.x * TILE, y: VILLAGE_CENTER.y * TILE } });
+  }
+}
+
+class CaveScene extends InteriorScene {
+  constructor() {
+    super('cave', 'tiles-cave', 'cave');
+  }
+}
+
+class CastleScene extends InteriorScene {
+  constructor() {
+    super('castle', 'tiles-castle', 'castle');
+  }
+}
+
+class HideoutScene extends InteriorScene {
+  constructor() {
+    super('hideout', 'tiles-forest', 'forest');
+  }
+}
+
 // Global functions for NPC shop
 window.buyItem = (itemId, cost) => {
   if (playerState.coins < cost) {
@@ -3359,7 +3574,7 @@ const config = {
     default: 'arcade',
     arcade: { gravity: { y: 0 }, debug: false },
   },
-  scene: [BootScene, MainScene],
+  scene: [BootScene, MainScene, CaveScene, CastleScene, HideoutScene],
   render: {
     pixelArt: true,
   },
