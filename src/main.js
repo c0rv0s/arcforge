@@ -444,8 +444,22 @@ class BootScene extends Phaser.Scene {
     // Shadows for props
     this.load.image('shadows', `${envBase}/Props/Static/Shadows.png`);
 
-    // Forest-specific large tree
-    this.load.image('tree-forest', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.png');
+    // Forest-specific large tree - using Phaser's native Aseprite support
+    // Phaser can load Aseprite animations directly if you export JSON from Aseprite
+    // To export: Open Tree.aseprite > File > Export Sprite Sheet > Check "JSON Data"
+    // This will create Tree.json with frame metadata
+    const treeJsonPath = 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.json';
+    const treePngPath = 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.png';
+    
+    // Load as Aseprite atlas (will work if Tree.json exists)
+    // If JSON doesn't exist, Phaser will fail to load this, so we also load as fallback spritesheet
+    this.load.aseprite('tree-forest-atlas', treePngPath, treeJsonPath);
+    
+    // Fallback: manual spritesheet if JSON not available (frame size is estimated)
+    this.load.spritesheet('tree-forest-sheet', treePngPath, { 
+      frameWidth: 156, 
+      frameHeight: 208 
+    });
     this.load.image('tree-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/Props/Tree.png');
     
     // Light/glow effects for atmosphere
@@ -1501,16 +1515,40 @@ class MainScene extends Phaser.Scene {
       const treeFamily = Math.floor(regionNoise * 3) + 1; // 1, 2, or 3
       const treeKey = `tree-${treeFamily}-medium`;
       
-      // Occasional fairy tree in glades
-      if (rand < 0.08 && this.textures.exists('tree-forest')) {
-        const scale = 0.28 + rand2 * 0.12;
-        shadow = this.add.ellipse(actualX, actualY + 15, 40 * scale, 16 * scale, 0x000000, 0.3);
-        shadow.setDepth(actualY - 1);
-        visual = this.add.sprite(actualX, actualY, 'tree-forest');
-        visual.setScale(scale);
-        visual.setOrigin(0.5, 0.95);
-        visual.setDepth(actualY);
-        visual.setFlipX(rand3 > 0.5);
+      // Occasional fairy tree in glades - prefer Aseprite atlas if available, else use spritesheet
+      if (rand < 0.08) {
+        let treeKey = null;
+        let frameIndex = null;
+        
+        // Check if Aseprite atlas loaded successfully (Tree.json was exported)
+        if (this.textures.exists('tree-forest-atlas')) {
+          treeKey = 'tree-forest-atlas';
+          const texture = this.textures.get('tree-forest-atlas');
+          // Aseprite atlases have named frames, get all frame names and pick random
+          const frameNames = texture.getFrameNames();
+          if (frameNames.length > 0) {
+            frameIndex = frameNames[Math.floor(Math.random() * frameNames.length)];
+          } else {
+            // Fallback to frame index if no named frames
+            frameIndex = Math.floor(Math.random() * texture.frameTotal);
+          }
+        } else if (this.textures.exists('tree-forest-sheet')) {
+          // Fallback to manual spritesheet
+          treeKey = 'tree-forest-sheet';
+          const texture = this.textures.get('tree-forest-sheet');
+          frameIndex = Math.floor(Math.random() * texture.frameTotal);
+        }
+        
+        if (treeKey) {
+          const scale = 0.28 + rand2 * 0.12;
+          shadow = this.add.ellipse(actualX, actualY + 15, 40 * scale, 16 * scale, 0x000000, 0.3);
+          shadow.setDepth(actualY - 1);
+          visual = this.add.sprite(actualX, actualY, treeKey, frameIndex);
+          visual.setScale(scale);
+          visual.setOrigin(0.5, 0.95);
+          visual.setDepth(actualY);
+          visual.setFlipX(rand3 > 0.5);
+        }
       } else if (this.textures.exists(treeKey)) {
         // Use consistent tree family with size variation only
         const scale = 0.35 + rand2 * 0.18; // Size variation within same type

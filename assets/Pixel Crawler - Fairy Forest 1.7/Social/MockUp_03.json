@@ -1,0 +1,39 @@
+{ "frames": [
+   {
+    "filename": "MockUp_03.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 400, "h": 400 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 400, "h": 400 },
+    "sourceSize": { "w": 400, "h": 400 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-arm64",
+  "image": "MockUp_03.png",
+  "format": "RGBA8888",
+  "size": { "w": 400, "h": 400 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Group 1" },
+   { "name": "Layer", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Low", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Rocks", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Shadowns", "group": "Group 1", "opacity": 255, "blendMode": "soft_light" },
+   { "name": "Layer 4", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 9", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 6", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 3", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 8", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 7", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Char", "group": "Group 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 10", "group": "Group 1", "opacity": 255, "blendMode": "soft_light" }
+  ],
+  "slices": [
+  ]
+ }
+}

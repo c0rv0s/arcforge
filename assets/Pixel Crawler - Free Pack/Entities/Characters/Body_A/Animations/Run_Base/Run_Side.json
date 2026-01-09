@@ -1,0 +1,75 @@
+{ "frames": [
+   {
+    "filename": "Run_Side 0.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 19, "h": 30 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 17, "w": 19, "h": 30 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Run_Side 1.aseprite",
+    "frame": { "x": 19, "y": 0, "w": 16, "h": 30 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 24, "y": 18, "w": 16, "h": 30 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Run_Side 2.aseprite",
+    "frame": { "x": 0, "y": 30, "w": 14, "h": 30 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 25, "y": 18, "w": 14, "h": 30 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Run_Side 3.aseprite",
+    "frame": { "x": 35, "y": 0, "w": 16, "h": 29 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 25, "y": 17, "w": 16, "h": 29 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Run_Side 4.aseprite",
+    "frame": { "x": 14, "y": 30, "w": 13, "h": 29 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 26, "y": 18, "w": 13, "h": 29 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Run_Side 5.aseprite",
+    "frame": { "x": 35, "y": 29, "w": 15, "h": 29 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 25, "y": 18, "w": 15, "h": 29 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-arm64",
+  "image": "Run_Side.png",
+  "format": "RGBA8888",
+  "size": { "w": 51, "h": 60 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Leg_B", "opacity": 255, "blendMode": "normal" },
+   { "name": "Chest", "opacity": 255, "blendMode": "normal" },
+   { "name": "Head", "opacity": 255, "blendMode": "normal" },
+   { "name": "Arm_B", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

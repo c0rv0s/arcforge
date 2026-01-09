@@ -1,0 +1,96 @@
+{ "frames": [
+   {
+    "filename": "Pierce_Top 0.aseprite",
+    "frame": { "x": 0, "y": 69, "w": 18, "h": 28 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 24, "y": 20, "w": 18, "h": 28 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 1.aseprite",
+    "frame": { "x": 18, "y": 69, "w": 16, "h": 28 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 25, "y": 20, "w": 16, "h": 28 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 2.aseprite",
+    "frame": { "x": 19, "y": 38, "w": 15, "h": 28 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 26, "y": 20, "w": 15, "h": 28 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 3.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 17, "h": 39 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 20, "y": 9, "w": 17, "h": 39 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 4.aseprite",
+    "frame": { "x": 17, "y": 0, "w": 17, "h": 38 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 20, "y": 10, "w": 17, "h": 38 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 5.aseprite",
+    "frame": { "x": 34, "y": 34, "w": 16, "h": 37 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 21, "y": 11, "w": 16, "h": 37 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 6.aseprite",
+    "frame": { "x": 34, "y": 0, "w": 18, "h": 34 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 22, "y": 14, "w": 18, "h": 34 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Pierce_Top 7.aseprite",
+    "frame": { "x": 0, "y": 39, "w": 19, "h": 30 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 18, "w": 19, "h": 30 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-arm64",
+  "image": "Pierce_Top.png",
+  "format": "RGBA8888",
+  "size": { "w": 52, "h": 97 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "k", "from": 0, "to": 0, "direction": "forward", "color": "#000000ff" },
+   { "name": "k", "from": 3, "to": 3, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 4", "opacity": 255, "blendMode": "normal" },
+   { "name": "Arma", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 2", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 3", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

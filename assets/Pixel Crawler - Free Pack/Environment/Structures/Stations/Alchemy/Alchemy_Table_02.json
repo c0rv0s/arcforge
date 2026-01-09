@@ -1,0 +1,484 @@
+{ "frames": [
+   {
+    "filename": "Alchemy_Table_02 0.aseprite",
+    "frame": { "x": 192, "y": 49, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 1.aseprite",
+    "frame": { "x": 0, "y": 229, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 2.aseprite",
+    "frame": { "x": 144, "y": 227, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 3.aseprite",
+    "frame": { "x": 96, "y": 227, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 4.aseprite",
+    "frame": { "x": 48, "y": 227, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 5.aseprite",
+    "frame": { "x": 288, "y": 226, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 6.aseprite",
+    "frame": { "x": 240, "y": 226, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 7.aseprite",
+    "frame": { "x": 96, "y": 227, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 8.aseprite",
+    "frame": { "x": 192, "y": 225, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 9.aseprite",
+    "frame": { "x": 0, "y": 185, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 10.aseprite",
+    "frame": { "x": 144, "y": 183, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 11.aseprite",
+    "frame": { "x": 96, "y": 183, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 12.aseprite",
+    "frame": { "x": 240, "y": 270, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 13.aseprite",
+    "frame": { "x": 96, "y": 51, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 14.aseprite",
+    "frame": { "x": 0, "y": 53, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 15.aseprite",
+    "frame": { "x": 192, "y": 93, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 16.aseprite",
+    "frame": { "x": 240, "y": 94, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 17.aseprite",
+    "frame": { "x": 96, "y": 51, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 18.aseprite",
+    "frame": { "x": 288, "y": 94, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 19.aseprite",
+    "frame": { "x": 48, "y": 95, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 20.aseprite",
+    "frame": { "x": 96, "y": 95, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 21.aseprite",
+    "frame": { "x": 288, "y": 226, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 22.aseprite",
+    "frame": { "x": 144, "y": 95, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 23.aseprite",
+    "frame": { "x": 0, "y": 97, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 24.aseprite",
+    "frame": { "x": 192, "y": 137, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 25.aseprite",
+    "frame": { "x": 240, "y": 138, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 26.aseprite",
+    "frame": { "x": 288, "y": 138, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 27.aseprite",
+    "frame": { "x": 48, "y": 139, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 28.aseprite",
+    "frame": { "x": 96, "y": 139, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 29.aseprite",
+    "frame": { "x": 144, "y": 139, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 30.aseprite",
+    "frame": { "x": 0, "y": 141, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 31.aseprite",
+    "frame": { "x": 192, "y": 181, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 32.aseprite",
+    "frame": { "x": 240, "y": 182, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 33.aseprite",
+    "frame": { "x": 288, "y": 182, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 34.aseprite",
+    "frame": { "x": 240, "y": 226, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 35.aseprite",
+    "frame": { "x": 48, "y": 183, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 36.aseprite",
+    "frame": { "x": 240, "y": 48, "w": 48, "h": 46 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 18, "w": 48, "h": 46 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 37.aseprite",
+    "frame": { "x": 240, "y": 0, "w": 48, "h": 48 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 16, "w": 48, "h": 48 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 38.aseprite",
+    "frame": { "x": 288, "y": 47, "w": 48, "h": 47 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 17, "w": 48, "h": 47 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 39.aseprite",
+    "frame": { "x": 192, "y": 0, "w": 48, "h": 49 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 15, "w": 48, "h": 49 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 40.aseprite",
+    "frame": { "x": 96, "y": 0, "w": 48, "h": 51 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 13, "w": 48, "h": 51 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 41.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 48, "h": 53 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 11, "w": 48, "h": 53 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 42.aseprite",
+    "frame": { "x": 48, "y": 0, "w": 48, "h": 51 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 13, "w": 48, "h": 51 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 43.aseprite",
+    "frame": { "x": 144, "y": 0, "w": 48, "h": 49 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 15, "w": 48, "h": 49 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 44.aseprite",
+    "frame": { "x": 288, "y": 0, "w": 48, "h": 47 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 17, "w": 48, "h": 47 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 45.aseprite",
+    "frame": { "x": 240, "y": 0, "w": 48, "h": 48 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 16, "w": 48, "h": 48 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 46.aseprite",
+    "frame": { "x": 144, "y": 49, "w": 48, "h": 46 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 18, "w": 48, "h": 46 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 47.aseprite",
+    "frame": { "x": 192, "y": 269, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 48.aseprite",
+    "frame": { "x": 48, "y": 51, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 49.aseprite",
+    "frame": { "x": 48, "y": 51, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   },
+   {
+    "filename": "Alchemy_Table_02 50.aseprite",
+    "frame": { "x": 48, "y": 51, "w": 48, "h": 44 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 0, "y": 20, "w": 48, "h": 44 },
+    "sourceSize": { "w": 48, "h": 64 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-arm64",
+  "image": "Alchemy_Table_02.png",
+  "format": "RGBA8888",
+  "size": { "w": 336, "h": 314 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 2", "opacity": 255, "blendMode": "normal" },
+   { "name": "Taça", "opacity": 255, "blendMode": "normal" },
+   { "name": "Livro", "opacity": 255, "blendMode": "normal" },
+   { "name": "Fogo", "opacity": 255, "blendMode": "normal" },
+   { "name": "Pote", "opacity": 255, "blendMode": "normal" },
+   { "name": "Folha", "opacity": 255, "blendMode": "normal" },
+   { "name": "Copo", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

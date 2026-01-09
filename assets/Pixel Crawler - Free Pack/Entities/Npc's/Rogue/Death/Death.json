@@ -1,0 +1,72 @@
+{ "frames": [
+   {
+    "filename": "Death 0.aseprite",
+    "frame": { "x": 28, "y": 0, "w": 19, "h": 30 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 2, "w": 19, "h": 30 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Death 1.aseprite",
+    "frame": { "x": 47, "y": 0, "w": 21, "h": 23 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 9, "w": 21, "h": 23 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Death 2.aseprite",
+    "frame": { "x": 0, "y": 0, "w": 28, "h": 23 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 9, "w": 28, "h": 23 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Death 3.aseprite",
+    "frame": { "x": 0, "y": 30, "w": 34, "h": 15 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 17, "w": 34, "h": 15 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Death 4.aseprite",
+    "frame": { "x": 34, "y": 41, "w": 35, "h": 9 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 23, "w": 35, "h": 9 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   },
+   {
+    "filename": "Death 5.aseprite",
+    "frame": { "x": 34, "y": 30, "w": 35, "h": 11 },
+    "rotated": false,
+    "trimmed": true,
+    "spriteSourceSize": { "x": 23, "y": 21, "w": 35, "h": 11 },
+    "sourceSize": { "w": 64, "h": 32 },
+    "duration": 100
+   }
+ ],
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-arm64",
+  "image": "Death.png",
+  "format": "RGBA8888",
+  "size": { "w": 69, "h": 50 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}
