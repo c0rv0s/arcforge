@@ -396,25 +396,61 @@ class BootScene extends Phaser.Scene {
   loadEnvironmentAssets() {
     const envBase = 'assets/Pixel Crawler - Free Pack/Environment';
 
-    // Station sprites
-    this.load.image('station-furnace', `${envBase}/Structures/Stations/Furnace/Furnace.png`);
-    this.load.image('station-anvil', `${envBase}/Structures/Stations/Anvil/Anvil.png`);
-    this.load.image('station-workbench', `${envBase}/Structures/Stations/Workbench/Workbench.png`);
+    // Station sprites - use INDIVIDUAL variants, not combined sheets!
+    // Furnace: Stone_01.png is 64x76, frames are 32x48
+    this.load.spritesheet('station-furnace', `${envBase}/Structures/Stations/Furnace/Stone_01.png`, {
+      frameWidth: 32, frameHeight: 38  // trimmed size
+    });
+    // Anvil: Anvil_01.png frames are 64x80
+    this.load.spritesheet('station-anvil', `${envBase}/Structures/Stations/Anvil/Anvil_01.png`, {
+      frameWidth: 62, frameHeight: 61  // approximately uniform across frames
+    });
+    // Alchemy: Alchemy_Table_01.png 
+    this.load.spritesheet('station-alchemy', `${envBase}/Structures/Stations/Alchemy/Alchemy_Table_01.png`, {
+      frameWidth: 48, frameHeight: 48
+    });
+    // Bonfire: Bonfire_01.png frames are 32x32
+    this.load.spritesheet('station-bonfire', `${envBase}/Structures/Stations/Bonfire/Bonfire_01.png`, {
+      frameWidth: 28, frameHeight: 27  // trimmed size
+    });
+    // Sawmill and Cooking - load as images for now, we'll crop manually
+    this.load.image('station-sawmill', `${envBase}/Structures/Stations/Sawmill/Level_1.png`);
+    this.load.image('station-cooking', `${envBase}/Structures/Stations/Cooking Station/Cooking Station.png`);
+    // Workbench - combined sheet, will need manual cropping
+    this.load.image('station-workbench-full', `${envBase}/Structures/Stations/Workbench/Workbench.png`);
+    
+    // Building sprites - walls and roofs for assembling buildings
+    this.load.image('building-walls', `${envBase}/Structures/Buildings/Walls.png`);
+    this.load.image('building-roofs', `${envBase}/Structures/Buildings/Roofs.png`);
+    this.load.image('building-floors', `${envBase}/Structures/Buildings/Floors.png`);
+    this.load.image('building-props', `${envBase}/Structures/Buildings/Props.png`);
+    this.load.image('building-shadows', `${envBase}/Structures/Buildings/Shadows.png`);
 
-    // Floor tilesets - 16x16 pixel tiles (we scale to 32 in-game)
-    this.load.spritesheet('tileset-floors', `${envBase}/Tilesets/Floors_Tiles.png`, { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tileset-walls', `${envBase}/Tilesets/Wall_Tiles.png`, { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-water', `${envBase}/Tilesets/Water_tiles.png`, { frameWidth: 16, frameHeight: 16 });
+    // Floor tilesets - use Aseprite JSON to rebuild untrimmed sheets
+    this.load.image('tileset-floors-img', `${envBase}/Tilesets/Floors_Tiles.png`);
+    this.load.json('tileset-floors-json', `${envBase}/Tilesets/Floors_Tiles.json`);
+    this.load.image('tileset-walls-img', `${envBase}/Tilesets/Wall_Tiles.png`);
+    this.load.json('tileset-walls-json', `${envBase}/Tilesets/Wall_Tiles.json`);
+    this.load.image('tiles-water-img', `${envBase}/Tilesets/Water_tiles.png`);
+    this.load.json('tiles-water-json', `${envBase}/Tilesets/Water_tiles.json`);
 
     // Biome ground tiles
-    this.load.spritesheet('tiles-forest', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-desert-ground', 'assets/Pixel Crawler - Desert/Assets/Ground.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-desert-sand', 'assets/Pixel Crawler - Desert/Assets/Sand.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/TileSets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-sewer', 'assets/Pixel Crawler - Sewer/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-cave', 'assets/Pixel Crawler - Cave/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-forge', 'assets/Pixel Crawler - Forge/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('tiles-castle', 'assets/Pixel Crawler - Castle Environment 0.3/Assets/Tiles.png', { frameWidth: 16, frameHeight: 16 });
+    this.load.image('tiles-forest-img', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tiles.png');
+    this.load.json('tiles-forest-json', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tiles.json');
+    this.load.image('tiles-desert-ground-img', 'assets/Pixel Crawler - Desert/Assets/Ground.png');
+    this.load.json('tiles-desert-ground-json', 'assets/Pixel Crawler - Desert/Assets/Ground.json');
+    this.load.image('tiles-desert-sand-img', 'assets/Pixel Crawler - Desert/Assets/Sand.png');
+    this.load.json('tiles-desert-sand-json', 'assets/Pixel Crawler - Desert/Assets/Sand.json');
+    this.load.image('tiles-cemetery-img', 'assets/Pixel Crawler - Cemetery/Environment/TileSets/Tiles.png');
+    this.load.json('tiles-cemetery-json', 'assets/Pixel Crawler - Cemetery/Environment/TileSets/Tiles.json');
+    this.load.image('tiles-sewer-img', 'assets/Pixel Crawler - Sewer/Assets/Tiles.png');
+    this.load.json('tiles-sewer-json', 'assets/Pixel Crawler - Sewer/Assets/Tiles.json');
+    this.load.image('tiles-cave-img', 'assets/Pixel Crawler - Cave/Assets/Tiles.png');
+    this.load.json('tiles-cave-json', 'assets/Pixel Crawler - Cave/Assets/Tiles.json');
+    this.load.image('tiles-forge-img', 'assets/Pixel Crawler - Forge/Assets/Tiles.png');
+    this.load.json('tiles-forge-json', 'assets/Pixel Crawler - Forge/Assets/Tiles.json');
+    this.load.image('tiles-castle-img', 'assets/Pixel Crawler - Castle Environment 0.3/Assets/Tiles.png');
+    this.load.json('tiles-castle-json', 'assets/Pixel Crawler - Castle Environment 0.3/Assets/Tiles.json');
     
     // Trees - ALL models and sizes for maximum variety
     this.load.image('tree-1-small', `${envBase}/Props/Static/Trees/Model_01/Size_02.png`);
@@ -428,39 +464,20 @@ class BootScene extends Phaser.Scene {
     this.load.image('tree-3-small', `${envBase}/Props/Static/Trees/Model_03/Size_02.png`);
     this.load.image('tree-3-medium', `${envBase}/Props/Static/Trees/Model_03/Size_03.png`);
     this.load.image('tree-3-large', `${envBase}/Props/Static/Trees/Model_03/Size_04.png`);
+    this.load.image('tree-3-xlarge', `${envBase}/Props/Static/Trees/Model_03/Size_05.png`);
 
-    // Full vegetation and rock images for precise frame extraction
-    this.load.image('vegetation-full', `${envBase}/Props/Static/Vegetation.png`);
-    this.load.image('rocks-full', `${envBase}/Props/Static/Rocks.png`);
-    
-    // Biome-specific prop sheets (16x16 tiles, we scale up)
-    this.load.spritesheet('props-forest-full', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('props-desert-full', 'assets/Pixel Crawler - Desert/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('props-cave-full', 'assets/Pixel Crawler - Cave/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('props-sewer-full', 'assets/Pixel Crawler - Sewer/Assets/Props.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('props-cemetery-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Props.png', { frameWidth: 16, frameHeight: 16 });
-    this.load.spritesheet('props-graves-full', 'assets/Pixel Crawler - Cemetery/Environment/Props/Graves.png', { frameWidth: 16, frameHeight: 16 });
-    
-    // Shadows for props
+    // NOTE: vegetation-full, rocks-full, and props-*-full are combined asset sheets
+    // They show ALL items stacked together and don't work well as spritesheets
+    // Using procedural graphics for small details instead (bushes, rocks, flowers)
+    // Keep shadows for ground details
     this.load.image('shadows', `${envBase}/Props/Static/Shadows.png`);
 
-    // Forest-specific large tree - using Phaser's native Aseprite support
-    // Phaser can load Aseprite animations directly if you export JSON from Aseprite
-    // To export: Open Tree.aseprite > File > Export Sprite Sheet > Check "JSON Data"
-    // This will create Tree.json with frame metadata
-    const treeJsonPath = 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.json';
-    const treePngPath = 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.png';
+    // NOTE: Tree.png and Props.png are combination sheets showing ALL assets
+    // Do NOT load these as spritesheets - use individual tree files instead (tree-1-small, etc.)
+    // this.load.image('tree-forest-combined', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Tree.png');
     
-    // Load as Aseprite atlas (will work if Tree.json exists)
-    // If JSON doesn't exist, Phaser will fail to load this, so we also load as fallback spritesheet
-    this.load.aseprite('tree-forest-atlas', treePngPath, treeJsonPath);
-    
-    // Fallback: manual spritesheet if JSON not available (frame size is estimated)
-    this.load.spritesheet('tree-forest-sheet', treePngPath, { 
-      frameWidth: 156, 
-      frameHeight: 208 
-    });
-    this.load.image('tree-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/Props/Tree.png');
+    // Cemetery tree is also a combined sheet - don't use
+    // this.load.image('tree-cemetery', 'assets/Pixel Crawler - Cemetery/Environment/Props/Tree.png');
     
     // Light/glow effects for atmosphere
     this.load.image('forest-light', 'assets/Pixel Crawler - Fairy Forest 1.7/Assets/Light.png');
@@ -513,9 +530,53 @@ class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // Rebuild trimmed Aseprite exports into untrimmed sheets for consistent tiling
+    this.rebuildAsepriteSheet('tileset-floors-img', 'tileset-floors-json', 'tileset-floors', 16, 16);
+    this.rebuildAsepriteSheet('tileset-walls-img', 'tileset-walls-json', 'tileset-walls', 16, 16);
+    this.rebuildAsepriteSheet('tiles-water-img', 'tiles-water-json', 'tiles-water', 16, 16);
+    this.rebuildAsepriteSheet('tiles-forest-img', 'tiles-forest-json', 'tiles-forest', 16, 16);
+    this.rebuildAsepriteSheet('tiles-desert-ground-img', 'tiles-desert-ground-json', 'tiles-desert-ground', 16, 16);
+    this.rebuildAsepriteSheet('tiles-desert-sand-img', 'tiles-desert-sand-json', 'tiles-desert-sand', 16, 16);
+    this.rebuildAsepriteSheet('tiles-cemetery-img', 'tiles-cemetery-json', 'tiles-cemetery', 16, 16);
+    this.rebuildAsepriteSheet('tiles-sewer-img', 'tiles-sewer-json', 'tiles-sewer', 16, 16);
+    this.rebuildAsepriteSheet('tiles-cave-img', 'tiles-cave-json', 'tiles-cave', 16, 16);
+    this.rebuildAsepriteSheet('tiles-forge-img', 'tiles-forge-json', 'tiles-forge', 16, 16);
+    this.rebuildAsepriteSheet('tiles-castle-img', 'tiles-castle-json', 'tiles-castle', 16, 16);
+    // NOTE: Removed props-*-full rebuilding - these combined sheets don't work
+    // as spritesheets because they have variable-sized items
+
     // Create all animations
     this.createAnimations();
     this.scene.start('main');
+  }
+
+  rebuildAsepriteSheet(imgKey, jsonKey, outKey, frameWidth, frameHeight) {
+    const json = this.cache.json.get(jsonKey);
+    const imgTexture = this.textures.get(imgKey);
+    if (!imgTexture || !imgTexture.getSourceImage()) return;
+
+    // If JSON missing, fall back to direct spritesheet creation
+    if (!json) {
+      if (this.textures.exists(outKey)) this.textures.remove(outKey);
+      this.textures.addSpriteSheet(outKey, imgTexture.getSourceImage(), { frameWidth, frameHeight });
+      return;
+    }
+
+    const frames = json.frames;
+    const frameEntry = Array.isArray(frames) ? frames[0] : frames[Object.keys(frames)[0]];
+    const sourceSize = frameEntry?.sourceSize || { w: imgTexture.getSourceImage().width, h: imgTexture.getSourceImage().height };
+    const spriteSource = frameEntry?.spriteSourceSize || { x: 0, y: 0, w: sourceSize.w, h: sourceSize.h };
+
+    const canvasKey = `${outKey}-canvas`;
+    if (this.textures.exists(canvasKey)) this.textures.remove(canvasKey);
+    const canvasTex = this.textures.createCanvas(canvasKey, sourceSize.w, sourceSize.h);
+    const ctx = canvasTex.getContext();
+    ctx.clearRect(0, 0, sourceSize.w, sourceSize.h);
+    ctx.drawImage(imgTexture.getSourceImage(), spriteSource.x, spriteSource.y);
+    canvasTex.refresh();
+
+    if (this.textures.exists(outKey)) this.textures.remove(outKey);
+    this.textures.addSpriteSheet(outKey, canvasTex.getCanvas(), { frameWidth, frameHeight });
   }
   
   createAnimations() {
@@ -920,59 +981,43 @@ class MainScene extends Phaser.Scene {
   // Rich ground rendering with texture variation
   drawRichGround(graphics, px, py, tileX, tileY, biome, chunkData) {
     const colors = biomeColors[biome] || biomeColors.meadow;
-    
-    // Base color with perlin noise variation for organic look
-    const noiseVal = perlinNoise(tileX, tileY, 3, 0.6, this.worldSeed + 100);
-    const variation = (noiseVal - 0.5) * 0.15;
-    
+
+    // Use smooth perlin noise for natural ground color variation
+    const noiseVal = perlinNoise(tileX * 0.15, tileY * 0.15, 3, 0.5, this.worldSeed + 100);
+    const variation = (noiseVal - 0.5) * 0.12;
+
     const baseColor = Phaser.Display.Color.IntegerToColor(colors.ground);
     const r = Math.max(0, Math.min(255, Math.floor(baseColor.red * (1 + variation))));
     const g = Math.max(0, Math.min(255, Math.floor(baseColor.green * (1 + variation))));
     const b = Math.max(0, Math.min(255, Math.floor(baseColor.blue * (1 + variation))));
-    
+
     graphics.fillStyle(Phaser.Display.Color.GetColor(r, g, b), 1);
     graphics.fillRect(px, py, TILE, TILE);
 
-    // Overlay an actual ground tile frame from the biome sheet
-    const sheet = GROUND_SHEETS[biome] || GROUND_SHEETS.meadow;
-    if (sheet && this.textures.exists(sheet.key)) {
-      const tex = this.textures.get(sheet.key);
-      const baseFrame = GROUND_FRAMES[biome] ?? 0;
-      const totalFrames = Math.max(1, tex.frameTotal - 1);
-      const frameIdx = Math.min(totalFrames - 1, baseFrame);
-      const sprite = this.add.image(px + TILE / 2, py + TILE / 2, sheet.key, frameIdx);
-      const scale = sheet.scale || 2;
-      sprite.setDisplaySize(TILE, TILE);
-      sprite.setDepth(0.05);
-      chunkData.tiles.push(sprite);
-    }
+    // Add subtle ground detail based on biome (simple and clean)
+    const detailRand = seededRandom(tileX * 500 + tileY + this.worldSeed);
 
-    // Add subtle texture pattern based on biome
-    const patternRand = seededRandom(tileX * 500 + tileY + this.worldSeed);
-    
-    if (biome === 'forest' || biome === 'meadow') {
-      // Grass texture - small darker patches
-      for (let i = 0; i < 2; i++) {
-        const ox = (seededRandom(tileX * 100 + tileY * 10 + i + this.worldSeed) * TILE) | 0;
-        const oy = (seededRandom(tileX * 10 + tileY * 100 + i + this.worldSeed) * TILE) | 0;
-        const size = 3 + patternRand * 4;
-        graphics.fillStyle(colors.accent || colors.ground, 0.25);
-        graphics.fillEllipse(px + ox, py + oy, size, size * 0.6);
+    if (biome === 'road') {
+      // Dirt road with occasional pebbles
+      if (detailRand < 0.08) {
+        const pebbleX = px + detailRand * TILE;
+        const pebbleY = py + (detailRand * 200 % TILE);
+        graphics.fillStyle(0x6a5a4a, 0.4);
+        graphics.fillCircle(pebbleX, pebbleY, 2);
       }
     } else if (biome === 'desert') {
-      // Sand ripples
-      if (patternRand < 0.3) {
-        graphics.lineStyle(1, 0xc4913a, 0.15);
-        const rippleY = py + patternRand * TILE;
-        graphics.lineBetween(px, rippleY, px + TILE, rippleY + 2);
+      // Occasional darker sand patches for texture
+      if (detailRand < 0.15) {
+        const patchX = px + detailRand * TILE;
+        const patchY = py + (detailRand * 300 % TILE);
+        graphics.fillStyle(0xb8956a, 0.3);
+        graphics.fillEllipse(patchX, patchY, 6 + detailRand * 4, 3 + detailRand * 2);
       }
-    } else if (biome === 'cemetery' || biome === 'cave') {
-      // Rocky texture - small stone patches
-      for (let i = 0; i < 2; i++) {
-        const ox = (seededRandom(tileX * 80 + tileY * 8 + i + this.worldSeed) * TILE) | 0;
-        const oy = (seededRandom(tileX * 8 + tileY * 80 + i + this.worldSeed) * TILE) | 0;
-        graphics.fillStyle(0x3a3a4a, 0.25);
-        graphics.fillEllipse(px + ox, py + oy, 4, 3);
+    } else if (biome === 'water') {
+      // Water shimmer effect
+      graphics.fillStyle(0x5dade2, 0.3);
+      if (detailRand < 0.2) {
+        graphics.fillEllipse(px + TILE/2, py + TILE/2, 8, 4);
       }
     }
   }
@@ -1510,55 +1555,57 @@ class MainScene extends Phaser.Scene {
     const actualY = y + offsetY;
 
     if (biome === 'forest') {
-      // Use perlin noise to determine tree FAMILY for this region (creates consistent groves)
+      // Use perlin noise to determine tree FAMILY and SIZE for this region (creates consistent groves)
       const regionNoise = perlinNoise(tileX * 0.08, tileY * 0.08, 2, 0.5, this.worldSeed + 3333);
+      const sizeNoise = perlinNoise(tileX * 0.05, tileY * 0.05, 2, 0.5, this.worldSeed + 5555);
       const treeFamily = Math.floor(regionNoise * 3) + 1; // 1, 2, or 3
-      const treeKey = `tree-${treeFamily}-medium`;
-      
-      // Occasional fairy tree in glades - prefer Aseprite atlas if available, else use spritesheet
-      if (rand < 0.08) {
-        let treeKey = null;
-        let frameIndex = null;
-        
-        // Check if Aseprite atlas loaded successfully (Tree.json was exported)
-        if (this.textures.exists('tree-forest-atlas')) {
-          treeKey = 'tree-forest-atlas';
-          const texture = this.textures.get('tree-forest-atlas');
-          // Aseprite atlases have named frames, get all frame names and pick random
-          const frameNames = texture.getFrameNames();
-          if (frameNames.length > 0) {
-            frameIndex = frameNames[Math.floor(Math.random() * frameNames.length)];
-          } else {
-            // Fallback to frame index if no named frames
-            frameIndex = Math.floor(Math.random() * texture.frameTotal);
-          }
-        } else if (this.textures.exists('tree-forest-sheet')) {
-          // Fallback to manual spritesheet
-          treeKey = 'tree-forest-sheet';
-          const texture = this.textures.get('tree-forest-sheet');
-          frameIndex = Math.floor(Math.random() * texture.frameTotal);
-        }
-        
-        if (treeKey) {
-          const scale = 0.28 + rand2 * 0.12;
-          shadow = this.add.ellipse(actualX, actualY + 15, 40 * scale, 16 * scale, 0x000000, 0.3);
+
+      // Determine tree size based on noise - creates natural variation with large trees in groves
+      let treeSize;
+      if (sizeNoise > 0.75) {
+        treeSize = 'xlarge'; // All models have xlarge (Size_05)
+      } else if (sizeNoise > 0.5) {
+        treeSize = 'large';
+      } else if (sizeNoise > 0.25) {
+        treeSize = 'medium';
+      } else {
+        treeSize = 'small';
+      }
+
+      // All forest trees use the individual tree files (tree-1-*, tree-2-*, tree-3-*)
+      // Use perlin noise to create groves of similar tree types
+      {
+        // Regular forest tree with size variation
+        const treeKey = `tree-${treeFamily}-${treeSize}`;
+        // Fallback to medium if size doesn't exist
+        const finalKey = this.textures.exists(treeKey) ? treeKey : `tree-${treeFamily}-medium`;
+
+        if (this.textures.exists(finalKey)) {
+          // Scale varies based on tree size for more natural look
+          const baseScale = { small: 0.3, medium: 0.4, large: 0.5, xlarge: 0.55 };
+          const scale = (baseScale[treeSize] || 0.4) + rand2 * 0.08;
+          const shadowSize = { small: 22, medium: 30, large: 40, xlarge: 48 };
+          const sSize = (shadowSize[treeSize] || 30) * scale;
+
+          shadow = this.add.ellipse(actualX, actualY + 14, sSize, sSize * 0.4, 0x000000, 0.25);
           shadow.setDepth(actualY - 1);
-          visual = this.add.sprite(actualX, actualY, treeKey, frameIndex);
-          visual.setScale(scale);
+          visual = this.add.sprite(actualX, actualY, finalKey);
+        visual.setScale(scale);
           visual.setOrigin(0.5, 0.95);
           visual.setDepth(actualY);
           visual.setFlipX(rand3 > 0.5);
+
+          // Occasional undergrowth near larger trees
+          if (treeSize === 'large' || treeSize === 'xlarge') {
+            if (rand4 > 0.6) {
+              const bushX = actualX + (rand5 - 0.5) * 20;
+              const bushY = actualY + 8 + rand4 * 6;
+              const bush = this.add.ellipse(bushX, bushY, 14, 8, 0x3a6a2a, 0.8);
+              bush.setDepth(bushY);
+              extras.push(bush);
+            }
+          }
         }
-      } else if (this.textures.exists(treeKey)) {
-        // Use consistent tree family with size variation only
-        const scale = 0.35 + rand2 * 0.18; // Size variation within same type
-        shadow = this.add.ellipse(actualX, actualY + 12, 28 * scale, 11 * scale, 0x000000, 0.25);
-        shadow.setDepth(actualY - 1);
-        visual = this.add.sprite(actualX, actualY, treeKey);
-        visual.setScale(scale);
-        visual.setOrigin(0.5, 0.95);
-        visual.setDepth(actualY);
-        visual.setFlipX(rand3 > 0.5);
       }
     } else if (biome === 'meadow') {
       // Meadow - sparse small trees or bushes
@@ -1587,25 +1634,70 @@ class MainScene extends Phaser.Scene {
         visual.setDepth(actualY);
       }
     } else if (biome === 'desert') {
-      // Desert - use props sheet for cacti/bones/ruins
-      if (this.textures.exists('props-desert-full')) {
-        const tex = this.textures.get('props-desert-full');
-        const totalFrames = Math.max(1, tex.frameTotal - 1);
-        // Bias to earlier frames which tend to be small props
-        const frameIdx = Math.floor(rand * Math.min(totalFrames, 80));
-        shadow = this.add.ellipse(actualX, actualY + 6, 18, 8, 0x000000, 0.18);
+      // Desert - varied rocks, cacti, and occasional bones
+      if (rand < 0.4) {
+        // Large desert rock/boulder
+        const rockWidth = 18 + rand2 * 14;
+        const rockHeight = 12 + rand2 * 10;
+        shadow = this.add.ellipse(actualX, actualY + rockHeight * 0.3, rockWidth * 0.8, rockHeight * 0.3, 0x000000, 0.2);
         shadow.setDepth(actualY - 1);
-        visual = this.add.sprite(actualX, actualY, 'props-desert-full', frameIdx);
-        visual.setOrigin(0.5, 0.8);
-        visual.setScale(2);
+        // Rock body (irregular shape using polygon)
+        visual = this.add.polygon(actualX, actualY, [
+          -rockWidth/2, rockHeight * 0.2,
+          -rockWidth * 0.4, -rockHeight * 0.3,
+          -rockWidth * 0.1, -rockHeight * 0.4,
+          rockWidth * 0.2, -rockHeight * 0.35,
+          rockWidth * 0.45, -rockHeight * 0.1,
+          rockWidth/2, rockHeight * 0.25,
+          0, rockHeight * 0.35
+        ], 0x8b7355, 1);
         visual.setDepth(actualY);
+        // Highlight
+        const highlight = this.add.polygon(actualX - 2, actualY - 4, [
+          -rockWidth * 0.2, 0, 0, -rockHeight * 0.2, rockWidth * 0.15, -rockHeight * 0.1
+        ], 0xa08060, 0.6);
+        highlight.setDepth(actualY + 0.1);
+        extras.push(highlight);
+      } else if (rand < 0.75) {
+        // Stylized cactus (saguaro-like)
+        const height = 30 + rand2 * 20;
+        const width = 6 + rand2 * 3;
+        shadow = this.add.ellipse(actualX, actualY + 4, width * 2, 6, 0x000000, 0.15);
+        shadow.setDepth(actualY - 1);
+        // Main trunk
+        visual = this.add.rectangle(actualX, actualY - height/2, width, height, 0x2d6b4a, 1);
+        visual.setDepth(actualY);
+        // Arms (if tall enough)
+        if (height > 35 && rand3 > 0.3) {
+          const armHeight = height * 0.35;
+          const armOffset = height * 0.2;
+          const leftArm = this.add.polygon(actualX - width, actualY - armOffset, [
+            0, 0, -8, 0, -8, -armHeight, -4, -armHeight, -4, -4, 0, -4
+          ], 0x2d6b4a, 1);
+          leftArm.setDepth(actualY);
+          extras.push(leftArm);
+          if (rand4 > 0.4) {
+            const rightArm = this.add.polygon(actualX + width, actualY - armOffset - 8, [
+              0, 0, 8, 0, 8, -armHeight * 0.8, 4, -armHeight * 0.8, 4, -4, 0, -4
+            ], 0x2d6b4a, 1);
+            rightArm.setDepth(actualY);
+            extras.push(rightArm);
+          }
+        }
       } else {
-        // Fallback simple cactus
-        const height = 25 + rand * 15;
-        shadow = this.add.ellipse(actualX, actualY + 3, 12, 5, 0x000000, 0.15);
+        // Small rock cluster
+        const numRocks = 2 + Math.floor(rand2 * 2);
+        shadow = this.add.ellipse(actualX, actualY + 3, 16, 6, 0x000000, 0.15);
         shadow.setDepth(actualY - 1);
-        visual = this.add.rectangle(actualX, actualY - height/2, 8, height, 0x2d8659, 1);
-        visual.setDepth(actualY);
+        for (let i = 0; i < numRocks; i++) {
+          const rx = actualX + (i - 1) * 8 + (rand3 - 0.5) * 6;
+          const ry = actualY + (rand4 - 0.5) * 4;
+          const rsize = 5 + rand5 * 4;
+          const rock = this.add.ellipse(rx, ry, rsize, rsize * 0.7, 0x9a8a7a, 1);
+          rock.setDepth(actualY + i * 0.01);
+          if (i === 0) visual = rock;
+          else extras.push(rock);
+        }
       }
     } else if (biome === 'cemetery') {
       // Cemetery - graves, monuments, sparse dead trees
@@ -1787,60 +1879,184 @@ class MainScene extends Phaser.Scene {
     graphics.setDepth(1);
 
     // === VILLAGE GROUND ===
-    // Main village square - packed dirt
-    graphics.fillStyle(0xc4a574, 1);
-    graphics.fillRect(centerX - TILE * 8, centerY - TILE * 8, TILE * 16, TILE * 16);
-    
-    // Cobblestone paths
-    graphics.fillStyle(0x8b8b8b, 0.8);
-    // Main crossroads
-    for (let i = -8; i <= 8; i++) {
-      graphics.fillRect(centerX - TILE * 1.5, centerY + i * TILE, TILE * 3, TILE);
-      graphics.fillRect(centerX + i * TILE, centerY - TILE * 1.5, TILE, TILE * 3);
-    }
+    // Outer grass ring for softer village edge
+    graphics.fillStyle(0x5a8a4a, 1);
+    graphics.fillCircle(centerX, centerY, TILE * 10);
 
-    // === CENTRAL WELL ===
+    // Main village square - packed dirt with gradient effect
+    graphics.fillStyle(0xc4a574, 1);
+    graphics.fillCircle(centerX, centerY, TILE * 8);
+
+    // Inner plaza - lighter packed earth
+    graphics.fillStyle(0xd4b584, 0.7);
+    graphics.fillCircle(centerX, centerY, TILE * 5);
+
+    // Cobblestone paths with individual stones
+    const pathWidth = TILE * 2.5;
+    graphics.fillStyle(0x6a6a6a, 1);
+    // Main crossroads base
+    graphics.fillRect(centerX - pathWidth/2, centerY - TILE * 9, pathWidth, TILE * 18);
+    graphics.fillRect(centerX - TILE * 9, centerY - pathWidth/2, TILE * 18, pathWidth);
+
+    // Add individual cobblestone pattern
+    graphics.fillStyle(0x7a7a7a, 0.8);
+    for (let i = -8; i <= 8; i++) {
+      for (let j = 0; j < 3; j++) {
+        const stoneX = centerX - TILE + j * TILE + (i % 2) * 8;
+        const stoneY = centerY + i * TILE;
+        graphics.fillRoundedRect(stoneX - 12, stoneY - 12, 22, 22, 4);
+        graphics.fillRoundedRect(centerY + i * TILE - 12, stoneX - 12, 22, 22, 4);
+      }
+    }
+    // Stone path edges
+    graphics.lineStyle(2, 0x4a4a4a, 0.5);
+    graphics.strokeRect(centerX - pathWidth/2, centerY - TILE * 9, pathWidth, TILE * 18);
+    graphics.strokeRect(centerX - TILE * 9, centerY - pathWidth/2, TILE * 18, pathWidth);
+
+    // === CENTRAL WELL with ROOF STRUCTURE ===
+    // Well shadow
+    graphics.fillStyle(0x000000, 0.25);
+    graphics.fillEllipse(centerX, centerY + 22, 60, 18);
+
+    // Stone base with individual stone texture
     graphics.fillStyle(0x5a5a6a, 1);
-    graphics.fillCircle(centerX, centerY, 18);
-    graphics.fillStyle(0x3498db, 0.8);
-    graphics.fillCircle(centerX, centerY, 10);
-    graphics.lineStyle(3, 0x4a3728);
-    graphics.strokeCircle(centerX, centerY, 18);
-    
-    const well = this.add.rectangle(centerX, centerY, 36, 36, 0x000000, 0);
+    graphics.fillCircle(centerX, centerY, 26);
+    // Individual stones on rim
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6) {
+      const sx = centerX + Math.cos(angle) * 22;
+      const sy = centerY + Math.sin(angle) * 22;
+      graphics.fillStyle(0x6a6a7a, 1);
+      graphics.fillCircle(sx, sy, 6);
+    }
+    // Stone rim highlight
+    graphics.fillStyle(0x8a8a9a, 0.8);
+    graphics.beginPath();
+    graphics.arc(centerX, centerY, 24, Math.PI * 1.1, Math.PI * 1.9);
+    graphics.lineTo(centerX, centerY);
+    graphics.closePath();
+    graphics.fillPath();
+    // Inner wall
+    graphics.fillStyle(0x3a3a4a, 1);
+    graphics.fillCircle(centerX, centerY, 16);
+    // Water with ripples
+    graphics.fillStyle(0x2980b9, 0.95);
+    graphics.fillCircle(centerX, centerY + 1, 13);
+    // Water highlights (ripples)
+    graphics.fillStyle(0x5dade2, 0.5);
+    graphics.fillEllipse(centerX - 4, centerY - 2, 6, 3);
+    graphics.fillEllipse(centerX + 3, centerY + 3, 4, 2);
+    // Stone rim stroke
+    graphics.lineStyle(3, 0x3a3a4a);
+    graphics.strokeCircle(centerX, centerY, 26);
+
+    // Well roof support posts
+    const postColor = 0x5a3a2a;
+    graphics.fillStyle(postColor, 1);
+    graphics.fillRect(centerX - 30, centerY - 35, 6, 50);
+    graphics.fillRect(centerX + 24, centerY - 35, 6, 50);
+    // Cross beam
+    graphics.fillStyle(0x4a2a1a, 1);
+    graphics.fillRect(centerX - 32, centerY - 38, 64, 6);
+    // Small roof
+    graphics.fillStyle(0x8b4513, 1);
+    graphics.beginPath();
+    graphics.moveTo(centerX - 38, centerY - 36);
+    graphics.lineTo(centerX, centerY - 52);
+    graphics.lineTo(centerX + 38, centerY - 36);
+    graphics.closePath();
+    graphics.fillPath();
+    // Roof highlight
+    graphics.fillStyle(0xa0522d, 1);
+    graphics.beginPath();
+    graphics.moveTo(centerX - 38, centerY - 36);
+    graphics.lineTo(centerX, centerY - 52);
+    graphics.lineTo(centerX, centerY - 36);
+    graphics.closePath();
+    graphics.fillPath();
+    // Bucket rope
+    graphics.lineStyle(2, 0x8b7355);
+    graphics.lineBetween(centerX, centerY - 36, centerX, centerY - 10);
+
+    const well = this.add.rectangle(centerX, centerY, 52, 52, 0x000000, 0);
     this.physics.add.existing(well, true);
     this.obstacles.add(well);
 
-    // === SINGLE FORGE (not a grid of them) ===
+    // === FLOWER BEDS around plaza ===
+    const flowerBeds = [
+      { x: -3, y: -3 }, { x: 3, y: -3 }, { x: -3, y: 3 }, { x: 3, y: 3 }
+    ];
+    flowerBeds.forEach(bed => {
+      const bx = centerX + bed.x * TILE;
+      const by = centerY + bed.y * TILE;
+      // Dirt bed
+      graphics.fillStyle(0x6a4a2a, 0.8);
+      graphics.fillEllipse(bx, by, 20, 14);
+      // Flowers
+      const flowerColors = [0xff6b6b, 0xffd93d, 0x9b59b6, 0x4d96ff];
+      for (let i = 0; i < 5; i++) {
+        const fx = bx + (i - 2) * 6 + Math.sin(i) * 3;
+        const fy = by + Math.cos(i * 2) * 4;
+        graphics.fillStyle(flowerColors[i % flowerColors.length], 0.9);
+        graphics.fillCircle(fx, fy - 2, 3);
+        graphics.fillStyle(0x3a7a2a, 1);
+        graphics.fillRect(fx - 1, fy, 2, 5);
+      }
+    });
+
+    // === LANTERN POSTS ===
+    const lanternPosts = [
+      { x: -2, y: -7 }, { x: 2, y: -7 },
+      { x: -2, y: 7 }, { x: 2, y: 7 },
+      { x: -7, y: -2 }, { x: -7, y: 2 },
+      { x: 7, y: -2 }, { x: 7, y: 2 }
+    ];
+    lanternPosts.forEach(post => {
+      const lx = centerX + post.x * TILE;
+      const ly = centerY + post.y * TILE;
+      // Post shadow
+      graphics.fillStyle(0x000000, 0.15);
+      graphics.fillEllipse(lx, ly + 3, 10, 4);
+      // Post
+      graphics.fillStyle(0x3a3a3a, 1);
+      graphics.fillRect(lx - 2, ly - 28, 4, 32);
+      // Lantern hook
+      graphics.fillStyle(0x4a4a4a, 1);
+      graphics.fillRect(lx - 6, ly - 30, 12, 3);
+      // Lantern
+      graphics.fillStyle(0xffd93d, 0.9);
+      graphics.fillRect(lx - 4, ly - 26, 8, 10);
+      graphics.fillStyle(0xff9500, 0.6);
+      graphics.fillCircle(lx, ly - 21, 3);
+    });
+
+    // === VILLAGE STATIONS ===
     this.addStation({
       x: centerX - TILE * 4,
-      y: centerY - TILE * 3,
+      y: centerY - TILE * 2,
       type: 'forge',
       label: 'Village Forge'
     });
 
-    // === TANNER STATION ===
     this.addStation({
       x: centerX + TILE * 4,
-      y: centerY - TILE * 3,
+      y: centerY - TILE * 2,
       type: 'tanner',
       label: 'Tanner'
     });
 
-    // === ALCHEMIST STATION ===
     this.addStation({
       x: centerX,
-      y: centerY + TILE * 5,
+      y: centerY + TILE * 4,
       type: 'alchemist',
       label: 'Alchemist'
     });
 
-    // === SHOP BUILDINGS (simplified - 4 shops in corners) ===
+    // === SHOP BUILDINGS ===
     const shopLayout = [
-      { id: 'weapons', x: -6, y: -6, name: 'Blade & Bow' },
-      { id: 'armor', x: 6, y: -6, name: 'Iron Ward Armory' },
-      { id: 'potions', x: -6, y: 6, name: 'The Bubbling Cauldron' },
-      { id: 'general', x: 6, y: 6, name: 'The Trading Post' },
+      { id: 'weapons', x: -5, y: -5, name: 'Blade & Bow' },
+      { id: 'armor', x: 5, y: -5, name: 'Iron Ward Armory' },
+      { id: 'potions', x: -5, y: 5, name: 'The Bubbling Cauldron' },
+      { id: 'general', x: 5, y: 5, name: 'The Trading Post' },
     ];
 
     shopLayout.forEach(layout => {
@@ -1848,79 +2064,167 @@ class MainScene extends Phaser.Scene {
       if (!shop) return;
       const shopX = centerX + layout.x * TILE;
       const shopY = centerY + layout.y * TILE;
-      
+
       this.createShopBuilding(shopX, shopY, { ...shop, name: layout.name });
-      this.createShopNPC(shopX, shopY + 35, layout.id, shop);
+      this.createShopNPC(shopX, shopY + 45, layout.id, shop);
     });
 
     // === KEY NPCS ===
-    // Elder in the center-north area
-    this.createNPC(centerX, centerY - TILE * 5, 'lore_keeper', 'Elder Thane', 'wizard');
-    // Guard near the forge
-    this.createNPC(centerX + TILE * 2, centerY, 'guard', 'Guard Captain', 'knight');
+    this.createNPC(centerX, centerY - TILE * 4, 'lore_keeper', 'Elder Thane', 'wizard');
+    this.createNPC(centerX + TILE * 2, centerY + TILE, 'guard', 'Guard Captain', 'knight');
 
-    // === DECORATIVE TREES (just a few, placed intentionally) ===
+    // === DECORATIVE TREES with variety ===
     const villageTrees = [
-      { x: -7, y: -2 }, { x: 7, y: -2 }, // Flanking paths
-      { x: -7, y: 3 }, { x: 7, y: 3 },
-      { x: 0, y: -7 }, // Near elder
+      { x: -7, y: -1, type: 1, size: 'medium' },
+      { x: 7, y: -1, type: 2, size: 'medium' },
+      { x: -7, y: 2, type: 1, size: 'small' },
+      { x: 7, y: 2, type: 2, size: 'small' },
+      { x: -1, y: -6, type: 3, size: 'small' },
+      { x: 1, y: -6, type: 1, size: 'small' },
     ];
-    
+
     villageTrees.forEach(pos => {
       const tx = centerX + pos.x * TILE;
       const ty = centerY + pos.y * TILE;
-      if (this.textures.exists('tree-1-small')) {
-        const tree = this.add.sprite(tx, ty, 'tree-1-small');
-        tree.setScale(0.35);
+      const treeKey = `tree-${pos.type}-${pos.size}`;
+      if (this.textures.exists(treeKey)) {
+        // Tree shadow
+        const shadowSize = pos.size === 'medium' ? 24 : 16;
+        const shadow = this.add.ellipse(tx, ty + 8, shadowSize, shadowSize * 0.4, 0x000000, 0.2);
+        shadow.setDepth(ty - 1);
+
+        const tree = this.add.sprite(tx, ty, treeKey);
+        tree.setScale(pos.size === 'medium' ? 0.4 : 0.3);
         tree.setOrigin(0.5, 0.95);
         tree.setDepth(ty);
         this.hideFromMinimap(tree);
-        
-        // Tree collision
+
         const treeCol = this.add.rectangle(tx, ty + 5, 16, 16, 0x000000, 0);
         this.physics.add.existing(treeCol, true);
         this.obstacles.add(treeCol);
       }
     });
+
+    // === WOODEN BENCHES ===
+    const benches = [
+      { x: -4, y: 1, angle: 0 },
+      { x: 4, y: 1, angle: 0 },
+    ];
+    benches.forEach(bench => {
+      const bx = centerX + bench.x * TILE;
+      const by = centerY + bench.y * TILE;
+      // Bench shadow
+      graphics.fillStyle(0x000000, 0.15);
+      graphics.fillEllipse(bx, by + 4, 28, 8);
+      // Bench seat
+      graphics.fillStyle(0x8b5a2b, 1);
+      graphics.fillRoundedRect(bx - 14, by - 4, 28, 8, 2);
+      // Bench legs
+      graphics.fillStyle(0x5a3a1a, 1);
+      graphics.fillRect(bx - 12, by + 2, 4, 6);
+      graphics.fillRect(bx + 8, by + 2, 4, 6);
+    });
   }
 
   createShopBuilding(x, y, shop) {
     const graphics = this.add.graphics();
-    graphics.setDepth(2);
+    graphics.setDepth(y - 50); // Depth based on position for proper layering
 
-    // Building base
-    graphics.fillStyle(0x6b5a3a, 1);
-    graphics.fillRect(x - 40, y - 35, 80, 70);
+    // === BUILDING SHADOW ===
+    graphics.fillStyle(0x000000, 0.2);
+    graphics.fillEllipse(x, y + 40, 90, 20);
 
-    // Building roof
-    graphics.fillStyle(0x8b4513, 1);
+    // === BUILDING BASE (stone foundation) ===
+    graphics.fillStyle(0x5a5a5a, 1);
+    graphics.fillRect(x - 42, y + 25, 84, 15);
+
+    // === MAIN WALLS ===
+    // Back wall (darker)
+    graphics.fillStyle(0x8b7355, 1);
+    graphics.fillRect(x - 40, y - 40, 80, 70);
+
+    // Front wall (lighter for depth)
+    graphics.fillStyle(0xa08060, 1);
+    graphics.fillRect(x - 38, y - 38, 76, 66);
+
+    // Wall texture (horizontal planks)
+    graphics.lineStyle(1, 0x6b5a3a, 0.3);
+    for (let py = y - 35; py < y + 25; py += 8) {
+      graphics.lineBetween(x - 36, py, x + 36, py);
+    }
+
+    // === ROOF ===
+    // Roof shadow
+    graphics.fillStyle(0x000000, 0.15);
     graphics.beginPath();
-    graphics.moveTo(x - 50, y - 30);
-    graphics.lineTo(x, y - 60);
-    graphics.lineTo(x + 50, y - 30);
+    graphics.moveTo(x - 52, y - 35);
+    graphics.lineTo(x, y - 70);
+    graphics.lineTo(x + 52, y - 35);
     graphics.closePath();
     graphics.fillPath();
 
-    // Door
-    graphics.fillStyle(0x4a3728, 1);
-    graphics.fillRect(x - 10, y + 10, 20, 25);
+    // Main roof
+    graphics.fillStyle(0xa0522d, 1);
+    graphics.beginPath();
+    graphics.moveTo(x - 50, y - 38);
+    graphics.lineTo(x, y - 72);
+    graphics.lineTo(x + 50, y - 38);
+    graphics.closePath();
+    graphics.fillPath();
 
-    // Window
-    graphics.fillStyle(0x87ceeb, 0.7);
-    graphics.fillRect(x - 30, y - 15, 15, 15);
-    graphics.fillRect(x + 15, y - 15, 15, 15);
+    // Roof highlight (left side lit)
+    graphics.fillStyle(0xc0653d, 1);
+    graphics.beginPath();
+    graphics.moveTo(x - 50, y - 38);
+    graphics.lineTo(x, y - 72);
+    graphics.lineTo(x, y - 38);
+    graphics.closePath();
+    graphics.fillPath();
 
-    // Sign
-    const sign = this.add.text(x, y - 70, shop.name, {
-      fontSize: '11px',
-      color: '#ffd66b',
+    // Roof edge trim
+    graphics.lineStyle(2, 0x4a2a1a, 1);
+    graphics.lineBetween(x - 50, y - 38, x + 50, y - 38);
+
+    // === DOOR ===
+    graphics.fillStyle(0x3d2817, 1);
+    graphics.fillRect(x - 12, y + 5, 24, 32);
+    // Door frame
+    graphics.lineStyle(2, 0x2a1a0a, 1);
+    graphics.strokeRect(x - 12, y + 5, 24, 32);
+    // Door handle
+    graphics.fillStyle(0xc4a000, 1);
+    graphics.fillCircle(x + 8, y + 20, 2);
+
+    // === WINDOWS ===
+    // Window frames
+    graphics.fillStyle(0x3d2817, 1);
+    graphics.fillRect(x - 32, y - 20, 20, 22);
+    graphics.fillRect(x + 12, y - 20, 20, 22);
+    // Window glass
+    graphics.fillStyle(0x87ceeb, 0.8);
+    graphics.fillRect(x - 30, y - 18, 16, 18);
+    graphics.fillRect(x + 14, y - 18, 16, 18);
+    // Window cross frames
+    graphics.lineStyle(2, 0x3d2817, 1);
+    graphics.lineBetween(x - 22, y - 18, x - 22, y);
+    graphics.lineBetween(x - 30, y - 9, x - 14, y - 9);
+    graphics.lineBetween(x + 22, y - 18, x + 22, y);
+    graphics.lineBetween(x + 14, y - 9, x + 30, y - 9);
+
+    // === SIGN ===
+    const sign = this.add.text(x, y - 80, shop.name, {
+      fontSize: '12px',
+      color: '#ffeebb',
       fontFamily: 'Space Grotesk',
-      backgroundColor: '#2c2c2c88',
-      padding: { x: 4, y: 2 },
-    }).setOrigin(0.5).setDepth(10);
+      fontStyle: 'bold',
+      backgroundColor: '#3a2a1a',
+      padding: { x: 6, y: 3 },
+      stroke: '#2a1a0a',
+      strokeThickness: 1,
+    }).setOrigin(0.5).setDepth(y + 100);
 
     // Building collision
-    const building = this.add.rectangle(x, y - 10, 75, 60, 0x000000, 0);
+    const building = this.add.rectangle(x, y - 5, 78, 70, 0x000000, 0);
     this.physics.add.existing(building, true);
     this.obstacles.add(building);
   }
@@ -3337,27 +3641,27 @@ class MainScene extends Phaser.Scene {
   }
 
   addStation(station) {
-    // Map station types to sprite keys
-    const stationSprites = {
-      forge: 'station-furnace',
-      tanner: 'station-workbench',
-      alchemist: 'station-alchemy',
+    // Map station types to sprite keys and their configs
+    const stationConfigs = {
+      forge: { key: 'station-furnace', scale: 1.5, originY: 0.9 },      // Stone furnace 32x38
+      tanner: { key: 'station-anvil', scale: 0.8, originY: 0.85 },       // Anvil 64x80
+      alchemist: { key: 'station-alchemy', scale: 1.2, originY: 0.85 }, // Alchemy table 48x48
+      bonfire: { key: 'station-bonfire', scale: 1.5, originY: 0.9 },    // Bonfire 32x32
     };
 
-    const spriteKey = stationSprites[station.type];
+    const config = stationConfigs[station.type];
     let stationSprite = null;
 
     // Try to use actual sprite
-    if (spriteKey && this.textures.exists(spriteKey)) {
-      stationSprite = this.add.sprite(station.x, station.y, spriteKey);
-      stationSprite.setScale(0.5); // Scale down from 192x384 to reasonable size
-      stationSprite.setOrigin(0.5, 0.7); // Adjust origin so it sits on ground
-      stationSprite.setDepth(3);
-
-      // If it's a spritesheet (like alchemy), set to first frame
-      if (spriteKey === 'station-alchemy' && this.anims.exists('station-alchemy')) {
-        stationSprite.play('station-alchemy');
-      }
+    if (config && this.textures.exists(config.key)) {
+      stationSprite = this.add.sprite(station.x, station.y, config.key, 0); // Frame 0
+      stationSprite.setScale(config.scale);
+      stationSprite.setOrigin(0.5, config.originY);
+      stationSprite.setDepth(station.y); // Depth based on y position for proper sorting
+      
+      // Add shadow under station
+      const shadow = this.add.ellipse(station.x, station.y + 5, 40, 12, 0x000000, 0.2);
+      shadow.setDepth(station.y - 1);
     } else {
       // Fallback to graphics
       const graphics = this.add.graphics();
@@ -3445,24 +3749,29 @@ class InteriorScene extends Phaser.Scene {
   }
 
   addInteriorProps(width, height) {
-    const props = [
-      { key: 'props-cave-full', count: 8, area: { x1: 4, y1: 4, x2: width / TILE - 4, y2: height / TILE - 8 }, scale: 2 },
-      { key: 'props-forest-full', count: 4, area: { x1: 6, y1: 6, x2: width / TILE - 6, y2: height / TILE - 10 }, scale: 2 },
-    ];
-    props.forEach((p) => {
-      if (!this.textures.exists(p.key)) return;
-      const tex = this.textures.get(p.key);
-      const totalFrames = Math.max(1, tex.frameTotal - 1);
-      for (let i = 0; i < p.count; i++) {
-        const x = Phaser.Math.Between(p.area.x1, p.area.x2) * TILE;
-        const y = Phaser.Math.Between(p.area.y1, p.area.y2) * TILE;
-        const frame = Phaser.Math.Between(0, totalFrames - 1);
-        const sprite = this.add.sprite(x, y, p.key, frame);
-        sprite.setScale(p.scale || 2);
-        sprite.setOrigin(0.5, 0.8);
-        sprite.setDepth(y);
+    // Add simple procedural decorations for dungeon interiors
+    // (previously used combined prop sheets which displayed incorrectly)
+    const propCount = 8;
+    for (let i = 0; i < propCount; i++) {
+      const x = Phaser.Math.Between(4, width / TILE - 4) * TILE;
+      const y = Phaser.Math.Between(4, height / TILE - 8) * TILE;
+      const rand = Math.random();
+      
+      if (rand < 0.3) {
+        // Rock
+        const rock = this.add.ellipse(x, y, 16 + Math.random() * 12, 10 + Math.random() * 8, 0x5a5a6a, 1);
+        rock.setDepth(y);
+      } else if (rand < 0.6) {
+        // Mushroom cluster
+        const mushColor = Math.random() < 0.5 ? 0xe74c3c : 0x9b59b6;
+        const mush = this.add.circle(x, y, 6 + Math.random() * 4, mushColor, 0.9);
+        mush.setDepth(y);
+      } else {
+        // Bush/plant
+        const bush = this.add.ellipse(x, y, 14 + Math.random() * 8, 10 + Math.random() * 6, 0x2d5a2d, 0.9);
+        bush.setDepth(y);
       }
-    });
+    }
   }
 
   update() {
